@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
   ArrowRight,
@@ -443,7 +443,7 @@ export default function Dashboard() {
                         <YAxis dataKey="location" type="category" axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 12, fontWeight: 500 }} width={90} />
                         <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                         <Bar dataKey="quantity" fill="#0f766e" radius={[0, 4, 4, 0]} barSize={24}>
-                          {stockByLocation.map((entry, index) => (
+                          {stockByLocation.map((_, index) => (
                             <Cell key={`cell-${index}`} fill={index === 0 ? '#0d9488' : index === 1 ? '#14b8a6' : '#5eead4'} />
                           ))}
                         </Bar>
@@ -579,7 +579,6 @@ export default function Dashboard() {
                       const product = productMap[move.product_id];
                       const isReceipt = move.type === 'receipt';
                       const isDelivery = move.type === 'delivery';
-                      const isTransfer = move.type === 'transfer';
                       
                       const Icon = isReceipt ? ArrowDownLeft : isDelivery ? ArrowUpRight : MapPinned;
                       const toneBg = isReceipt ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
