@@ -63,6 +63,11 @@ type StockLevel = {
   last_updated: string;
 };
 
+type Category = {
+  id: string;
+  name: string;
+};
+
 type StockMove = {
   id: string;
   product_id: string;
@@ -91,6 +96,7 @@ function useDashboardData() {
   const [locations, setLocations] = useState<DataState<Location[]>>({ loading: true, error: null, data: [] });
   const [stockLevels, setStockLevels] = useState<DataState<StockLevel[]>>({ loading: true, error: null, data: [] });
   const [moves, setMoves] = useState<DataState<StockMove[]>>({ loading: true, error: null, data: [] });
+  const [categories, setCategories] = useState<DataState<Category[]>>({ loading: true, error: null, data: [] });
 
   const load = async () => {
     setKpis((s) => ({ ...s, loading: true, error: null }));
@@ -98,14 +104,16 @@ function useDashboardData() {
     setLocations((s) => ({ ...s, loading: true, error: null }));
     setStockLevels((s) => ({ ...s, loading: true, error: null }));
     setMoves((s) => ({ ...s, loading: true, error: null }));
+    setCategories((s) => ({ ...s, loading: true, error: null }));
 
     try {
-      const [kpiRes, productRes, locationRes, stockRes, movesRes] = await Promise.all([
+      const [kpiRes, productRes, locationRes, stockRes, movesRes, catRes] = await Promise.all([
         api.get<KpiResponse>('/dashboard/kpis'),
         api.get<Product[]>('/products'),
         api.get<Location[]>('/locations'),
         api.get<StockLevel[]>('/stock/levels'),
         api.get<StockMove[]>('/operations/moves'),
+        api.get<Category[]>('/products/categories').catch(() => []), 
       ]);
 
       setKpis({ loading: false, error: null, data: kpiRes });
@@ -113,6 +121,7 @@ function useDashboardData() {
       setLocations({ loading: false, error: null, data: locationRes });
       setStockLevels({ loading: false, error: null, data: stockRes });
       setMoves({ loading: false, error: null, data: movesRes });
+      setCategories({ loading: false, error: null, data: catRes });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load dashboard data';
       setKpis((s) => ({ ...s, loading: false, error: message }));
@@ -127,7 +136,7 @@ function useDashboardData() {
     load();
   }, []);
 
-  return { kpis, products, locations, stockLevels, moves, reload: load };
+  return { kpis, products, locations, stockLevels, moves, categories, reload: load };
 }
 
 // --- Components ---
@@ -157,7 +166,7 @@ function SectionSkeleton({ height }: { height: string }) {
 
 // --- Main Page ---
 export default function Dashboard() {
-  const { kpis, products, locations, stockLevels, moves, reload } = useDashboardData();
+  const { kpis, products, locations, stockLevels, moves, categories, reload } = useDashboardData();
 
   // --- Filter State ---
   const [filterType, setFilterType] = useState<string>('all');
@@ -551,10 +560,9 @@ export default function Dashboard() {
                   className="text-[10px] font-bold uppercase tracking-wider bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-slate-600 outline-none focus:ring-1 focus:ring-slate-300"
                 >
                   <option value="all">All Categories</option>
-                  {/* Ideally fetch categories in useDashboardData, but we can infer them or use a static list if they aren't provided */}
-                  {/* For now, let's assume we might need to fetch them if needed, but the prompt implies using what's available */}
-                  {/* Since Products provides categories, we can use those if we fetched them. Let's update useDashboardData to fetch categories too. */}
-                  {/* NOTE: categories weren't in useDashboardData, let's add them. */}
+                  {categories.data.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
                 </select>
                 </div>
               </div>
