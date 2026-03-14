@@ -203,6 +203,11 @@ export default function Dashboard() {
     [stockByProduct]
   );
 
+  const recentMoves = useMemo(
+    () => [...moves.data].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8),
+    [moves.data]
+  );
+
   const filteredMoves = useMemo(() => {
     return moves.data.filter(move => {
       const product = productMap[move.product_id];
@@ -213,11 +218,6 @@ export default function Dashboard() {
       return matchType && matchStatus && matchLoc && matchCat;
     });
   }, [moves.data, filterType, filterStatus, filterLocId, filterCatId, productMap]);
-
-  const recentMoves = useMemo(
-    () => [...filteredMoves].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8),
-    [filteredMoves]
-  );
 
   const movementSeries = useMemo(() => {
     const now = new Date();
@@ -505,66 +505,14 @@ export default function Dashboard() {
         <div className="xl:col-span-1">
           {moves.loading ? <SectionSkeleton height="h-[784px]" /> : (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm h-full flex flex-col">
-              <div className="flex flex-col gap-4 mb-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-900">Recent Transactions</h2>
-                    <p className="text-sm text-slate-500">Latest stock movements.</p>
-                  </div>
-                  <Link to="/history" className="text-sm font-semibold text-slate-600 hover:text-slate-900 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                    View ledger
-                  </Link>
+              <div className="flex flex-col sm:flex-row xl:flex-col sm:items-center xl:items-start justify-between gap-4 mb-6">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Recent Transactions</h2>
+                  <p className="text-sm text-slate-500 mt-0.5">Latest stock movements.</p>
                 </div>
-
-                {/* Dynamic Filters */}
-                <div className="grid grid-cols-2 gap-2">
-                  <select 
-                    value={filterType}
-                    onChange={(e) => setFilterType(e.target.value)}
-                    className="text-[10px] font-bold uppercase tracking-wider bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-slate-600 outline-none focus:ring-1 focus:ring-slate-300"
-                  >
-                    <option value="all">All Types</option>
-                    <option value="receipt">Receipts</option>
-                    <option value="delivery">Deliveries</option>
-                    <option value="transfer">Internal</option>
-                    <option value="adjustment">Adjustments</option>
-                  </select>
-
-                  <select 
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="text-[10px] font-bold uppercase tracking-wider bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-slate-600 outline-none focus:ring-1 focus:ring-slate-300"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="draft">Draft</option>
-                    <option value="pending">Waiting</option>
-                    <option value="ready">Ready</option>
-                    <option value="done">Done</option>
-                    <option value="cancelled">Canceled</option>
-                  </select>
-
-                  <select 
-                    value={filterLocId}
-                    onChange={(e) => setFilterLocId(e.target.value)}
-                    className="text-[10px] font-bold uppercase tracking-wider bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-slate-600 outline-none focus:ring-1 focus:ring-slate-300"
-                  >
-                    <option value="all">All Locations</option>
-                    {locations.data.filter(l => l.type !== 'virtual').map(loc => (
-                      <option key={loc.id} value={loc.id}>{loc.name}</option>
-                    ))}
-                  </select>
-
-                <select 
-                  value={filterCatId}
-                  onChange={(e) => setFilterCatId(e.target.value)}
-                  className="text-[10px] font-bold uppercase tracking-wider bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-slate-600 outline-none focus:ring-1 focus:ring-slate-300"
-                >
-                  <option value="all">All Categories</option>
-                  {categories.data.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-                </div>
+                <Link to="/history" className="text-sm font-semibold text-slate-600 hover:text-slate-900 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                  View ledger
+                </Link>
               </div>
 
               <div className="flex-1 -mx-2">
@@ -622,6 +570,114 @@ export default function Dashboard() {
           )}
         </div>
 
+      </div>
+
+      {/* New Dynamic Filters Section */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+          <div>
+            <h2 className="text-xl font-extrabold text-slate-950">Operations Explorer</h2>
+            <p className="text-sm font-medium text-slate-500 mt-1">Drill down into stock movements with advanced filters.</p>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <select 
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-200 transition-all"
+            >
+              <option value="all">Document Type</option>
+              <option value="receipt">Receipts</option>
+              <option value="delivery">Deliveries</option>
+              <option value="transfer">Internal Transfers</option>
+              <option value="adjustment">Adjustments</option>
+            </select>
+
+            <select 
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-200 transition-all"
+            >
+              <option value="all">All Statuses</option>
+              <option value="draft">Draft</option>
+              <option value="pending">Waiting</option>
+              <option value="ready">Ready</option>
+              <option value="done">Done</option>
+              <option value="cancelled">Canceled</option>
+            </select>
+
+            <select 
+              value={filterLocId}
+              onChange={(e) => setFilterLocId(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-200 transition-all"
+            >
+              <option value="all">All Locations</option>
+              {locations.data.filter(l => l.type !== 'virtual').map(loc => (
+                <option key={loc.id} value={loc.id}>{loc.name}</option>
+              ))}
+            </select>
+
+            <select 
+              value={filterCatId}
+              onChange={(e) => setFilterCatId(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-200 transition-all"
+            >
+              <option value="all">All Categories</option>
+              {categories.data.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {filteredMoves.length === 0 ? (
+          <div className="py-12 flex flex-col items-center justify-center text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+            <RefreshCw size={32} className="text-slate-300 mb-3" />
+            <p className="text-sm font-medium">No movements match your current filters.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredMoves.slice(0, 9).map((move) => {
+              const product = productMap[move.product_id];
+              const isReceipt = move.type === 'receipt';
+              const isDelivery = move.type === 'delivery';
+              const Icon = isReceipt ? ArrowDownLeft : isDelivery ? ArrowUpRight : MapPinned;
+              const toneBg = isReceipt ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                             isDelivery ? 'bg-blue-50 text-blue-600 border-blue-100' : 
+                             'bg-indigo-50 text-indigo-600 border-indigo-100';
+
+              return (
+                <div key={move.id} className="surface-card !p-4 group hover:border-slate-300 transition-all border-slate-200 border bg-white flex items-center gap-4">
+                  <div className={`flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-2xl border ${toneBg}`}>
+                    <Icon size={20} strokeWidth={2.5} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                       <p className="text-sm font-bold text-slate-900 truncate">
+                        {product?.name || 'Unknown Item'}
+                      </p>
+                      <span className="text-xs font-bold text-slate-700 whitespace-nowrap bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md">
+                        {isReceipt ? '+' : isDelivery ? '-' : ''}{move.quantity}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1.5">
+                       <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                        move.status === 'done' ? 'text-emerald-700 bg-emerald-50 border border-emerald-100' : 
+                        move.status === 'pending' ? 'text-amber-700 bg-amber-50 border border-amber-100' : 
+                        'text-slate-500 bg-slate-50 border border-slate-100'
+                      }`}>
+                        {move.status}
+                      </span>
+                      <span className="text-[11px] font-medium text-slate-400">
+                        {new Date(move.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
