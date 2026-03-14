@@ -3,9 +3,12 @@ import { supabase } from '../lib/supabase';
 import { Loader2, ArrowLeft, Triangle } from 'lucide-react';
 
 export default function Auth() {
-  const [view, setView] = useState<'sign_in' | 'sign_up' | 'forgot_password'>('sign_in');
+  const [view, setView] = useState<'sign_in' | 'sign_up' | 'forgot_password' | 'reset_password'>('sign_in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -16,7 +19,7 @@ export default function Auth() {
     setError(null);
     setMessage(null);
 
-    if (!email || (view !== 'forgot_password' && !password)) {
+    if (!email || (view === 'sign_in' || view === 'sign_up') && !password) {
       setError('Please fill in all required fields.');
       setLoading(false);
       return;
@@ -38,10 +41,38 @@ export default function Auth() {
         setMessage('Registration successful! Please check your email to verify.');
       } else if (view === 'forgot_password') {
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin,
+          redirectTo: `${window.location.origin}/reset-password`,
         });
         if (resetError) throw resetError;
-        setMessage('OTP / Password reset link sent! Please check your email.');
+        setMessage('Password reset code/link sent. Check your email for the 6-digit code.');
+        setView('reset_password');
+      } else if (view === 'reset_password') {
+        if (!otp || otp.trim().length < 6) {
+          throw new Error('Enter the 6-digit code from your email.');
+        }
+        if (!newPassword || newPassword.length < 6) {
+          throw new Error('New password must be at least 6 characters.');
+        }
+        if (newPassword !== confirmNewPassword) {
+          throw new Error('New passwords do not match.');
+        }
+
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          email,
+          token: otp.trim(),
+          type: 'recovery',
+        });
+        if (verifyError) throw verifyError;
+
+        const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+        if (updateError) throw updateError;
+
+        setMessage('Password updated. You can now sign in with your new password.');
+        setOtp('');
+        setPassword('');
+        setNewPassword('');
+        setConfirmNewPassword('');
+        setView('sign_in');
       }
     } catch (err: unknown) {
       const message =
@@ -78,12 +109,13 @@ export default function Auth() {
 
             <h1 className="text-[32px] font-bold text-slate-900 tracking-tight leading-tight mb-2">
               {view === 'sign_in' ? 'Sign in to your account' : 
-               view === 'sign_up' ? 'Create an account' : 'Reset password'}
+               view === 'sign_up' ? 'Create an account' : view === 'forgot_password' ? 'Reset password' : 'Enter reset code'}
             </h1>
             <p className="text-sm font-medium text-slate-500 mb-8">
               {view === 'sign_in' ? 'Please continue to sign in to your business account' : 
                view === 'sign_up' ? 'Enter your details to register a new account' :
-               'Enter your email to receive a password reset OTP/link'}
+               view === 'forgot_password' ? 'Enter your email to receive a password reset code/link' :
+               'Enter the 6-digit code and set a new password'}
             </p>
 
             <form onSubmit={handleAuth} className="space-y-4">
@@ -101,7 +133,7 @@ export default function Auth() {
                 />
               </div>
 
-              {view !== 'forgot_password' && (
+              {(view === 'sign_in' || view === 'sign_up') && (
                 <div>
                   <input
                     type="password"
@@ -109,9 +141,45 @@ export default function Auth() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
-                    required
+                    required={view === 'sign_in' || view === 'sign_up'}
                   />
                 </div>
+              )}
+
+              {view === 'reset_password' && (
+                <>
+                  <div>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\s/g, ''))}
+                      placeholder="6-digit code"
+                      className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="New password"
+                      className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="password"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                      className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                      required
+                    />
+                  </div>
+                </>
               )}
 
               {view === 'sign_in' && (
@@ -132,7 +200,7 @@ export default function Auth() {
                 className="w-full py-3.5 bg-[#18181b] hover:bg-black text-white rounded-xl text-sm font-bold transition-all flex justify-center items-center gap-2 disabled:opacity-70 mt-4"
               >
                 {loading && <Loader2 size={16} className="animate-spin" />}
-                {view === 'forgot_password' ? 'Send Reset Instructions' : 'Continue'}
+                {view === 'forgot_password' ? 'Send Reset Code' : view === 'reset_password' ? 'Set New Password' : 'Continue'}
               </button>
             </form>
 
@@ -187,6 +255,19 @@ export default function Auth() {
                   >
                     Create an account
                   </button>
+               )}
+               {view === 'reset_password' && (
+                 <button
+                   type="button"
+                   onClick={() => {
+                     setError(null);
+                     setMessage(null);
+                     setView('forgot_password');
+                   }}
+                   className="text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
+                 >
+                   Resend code
+                 </button>
                )}
             </div>
           </div>

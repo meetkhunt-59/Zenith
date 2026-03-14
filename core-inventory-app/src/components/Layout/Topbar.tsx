@@ -1,14 +1,22 @@
-import { User } from 'lucide-react';
+import { Menu, User } from 'lucide-react';
 
 interface TopbarProps {
   userEmail: string;
+  onMenuClick?: () => void;
 }
 
-export default function Topbar({ userEmail }: TopbarProps) {
+export default function Topbar({ userEmail, onMenuClick }: TopbarProps) {
   return (
     <header className="flex justify-between items-center premium-card !p-5 mb-6 text-left">
       <div className="flex items-center gap-3 lg:hidden">
-         {/* Mobile structural placeholder if sidebar is hidden */}
+         <button
+           type="button"
+           onClick={onMenuClick}
+           className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+           aria-label="Open menu"
+         >
+           <Menu size={20} />
+         </button>
          <div className="font-bold text-xl tracking-tight text-slate-900">Stockly</div>
       </div>
       

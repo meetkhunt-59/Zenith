@@ -36,6 +36,9 @@ export default function Products() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [filterCategoryId, setFilterCategoryId] = useState('all');
+  const [filterLocationId, setFilterLocationId] = useState('all');
+  const [filterStockState, setFilterStockState] = useState<'all' | 'in_stock' | 'out_of_stock' | 'low_stock'>('all');
   const [saving, setSaving] = useState(false);
 
   // Form State
@@ -121,6 +124,9 @@ export default function Products() {
       if (!formData.category_id) {
         throw new Error('Please create/select a product category before adding products.');
       }
+      if (!editingId && formData.initial_stock > 0 && !formData.initial_location_id) {
+        throw new Error('Select an Initial Location when Initial Stock is greater than 0.');
+      }
 
       if (editingId) {
         await api.put(`/products/${editingId}`, {
@@ -139,17 +145,17 @@ export default function Products() {
           reorder_point: formData.reorder_point,
         });
 
-        if (formData.initial_location_id) {
+        if (formData.initial_location_id && formData.initial_stock > 0) {
           const qty = Math.max(0, Number(formData.initial_stock || 0));
-          if (qty >= 0) {
-          const move = await api.post<{ id: string }>('/operations/moves', {
-            product_id: newProd.id,
-            from_location_id: null,
-            to_location_id: formData.initial_location_id,
+          if (qty > 0) {
+            const move = await api.post<{ id: string }>('/operations/moves', {
+              product_id: newProd.id,
+              from_location_id: null,
+              to_location_id: formData.initial_location_id,
             quantity: qty,
             type: 'adjustment',
             status: 'draft',
-          });
+            });
           await api.post(`/operations/moves/${move.id}/validate`, {});
           }
         }
@@ -167,6 +173,27 @@ export default function Products() {
     p.name.toLowerCase().includes(search.toLowerCase()) || 
     p.sku.toLowerCase().includes(search.toLowerCase())
   );
+
+  const enhancedProducts = filteredProducts
+    .map(product => {
+      const prodStocks = stockLevels.filter(s => s.product_id === product.id && s.quantity > 0);
+      const totalStock = prodStocks.reduce((sum, s) => sum + s.quantity, 0);
+      const isLow = totalStock > 0 && totalStock <= product.reorder_point;
+      const isOut = totalStock === 0;
+
+      return { product, prodStocks, totalStock, isLow, isOut };
+    })
+    .filter(({ product, prodStocks, isLow, isOut }) => {
+      const matchesCategory = filterCategoryId === 'all' || product.category_id === filterCategoryId;
+      const matchesLocation =
+        filterLocationId === 'all' || prodStocks.some(s => s.location_id === filterLocationId && s.quantity > 0);
+      const matchesStockState =
+        filterStockState === 'all' ||
+        (filterStockState === 'in_stock' && !isOut) ||
+        (filterStockState === 'out_of_stock' && isOut) ||
+        (filterStockState === 'low_stock' && isLow);
+      return matchesCategory && matchesLocation && matchesStockState;
+    });
 
   return (
     <div className="space-y-6">
@@ -191,6 +218,46 @@ export default function Products() {
               className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400 shadow-sm"
             />
           </div>
+          <select
+            value={filterCategoryId}
+            onChange={(e) => setFilterCategoryId(e.target.value)}
+            className="px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 shadow-sm"
+            title="Filter by category"
+          >
+            <option value="all">All Categories</option>
+            {categories.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+          <select
+            value={filterLocationId}
+            onChange={(e) => setFilterLocationId(e.target.value)}
+            className="px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 shadow-sm"
+            title="Filter by location"
+          >
+            <option value="all">All Locations</option>
+            {locations
+              .filter(l => l.type === 'warehouse' || l.type === 'rack')
+              .map(l => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+          </select>
+          <select
+            value={filterStockState}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === 'all' || v === 'in_stock' || v === 'low_stock' || v === 'out_of_stock') {
+                setFilterStockState(v);
+              }
+            }}
+            className="px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 shadow-sm"
+            title="Smart stock filter"
+          >
+            <option value="all">All Stock</option>
+            <option value="in_stock">In Stock</option>
+            <option value="low_stock">Low Stock</option>
+            <option value="out_of_stock">Out of Stock</option>
+          </select>
           <button 
             onClick={openAddModal}
             className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 whitespace-nowrap"
@@ -220,17 +287,14 @@ export default function Products() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredProducts.length === 0 ? (
+                {enhancedProducts.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-12 text-center text-sm font-medium text-slate-500">
-                      No products found. Add your first item!
+                      No products match your filters. Add your first item!
                     </td>
                   </tr>
                 ) : (
-                  filteredProducts.map((product) => {
-                    const prodStocks = stockLevels.filter(s => s.product_id === product.id && s.quantity > 0);
-                    const totalStock = prodStocks.reduce((sum, s) => sum + s.quantity, 0);
-
+                  enhancedProducts.map(({ product, prodStocks, totalStock }) => {
                     return (
                       <tr key={product.id} className="hover:bg-slate-50/50 transition-colors group">
                         <td className="py-4 px-6">
