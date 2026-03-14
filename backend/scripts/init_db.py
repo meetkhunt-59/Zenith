@@ -9,6 +9,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from app.core.db import engine
 from app.models.base import Base
 import app.models.domain  # explicitly import to bind to Base metadata
+import app.models.inventory  # explicitly import to bind to Base metadata
 
 
 async def create_tables():

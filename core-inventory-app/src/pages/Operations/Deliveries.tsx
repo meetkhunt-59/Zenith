@@ -1,15 +1,41 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/api';
 import { 
   Plus, Loader2, CheckCircle2
 } from 'lucide-react';
 
+interface ProductMini {
+  id: string;
+  name: string;
+  sku: string;
+}
+
+interface LocationMini {
+  id: string;
+  name: string;
+  type?: string;
+}
+
+interface StockMove {
+  id: string;
+  product_id: string;
+  from_location_id: string | null;
+  to_location_id: string | null;
+  quantity: number;
+  type: string;
+  status: string;
+  created_at: string;
+  product?: ProductMini | null;
+  from_loc?: LocationMini | null;
+  to_loc?: LocationMini | null;
+}
+
 export default function Deliveries() {
-  const [moves, setMoves] = useState<any[]>([]);
+  const [moves, setMoves] = useState<StockMove[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [products, setProducts] = useState<any[]>([]);
-  const [locations, setLocations] = useState<any[]>([]);
+  const [products, setProducts] = useState<ProductMini[]>([]);
+  const [locations, setLocations] = useState<LocationMini[]>([]);
   const [validatingId, setValidatingId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -24,23 +50,13 @@ export default function Deliveries() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const { data: movesData, error: movesError } = await supabase
-        .from('stock_moves')
-        .select(`
-          *,
-          product:products(name, sku),
-          from_loc:locations!from_location_id(name),
-          to_loc:locations!to_location_id(name)
-        `)
-        .eq('type', 'delivery')
-        .order('created_at', { ascending: false });
+      const [movesData, prodData, locData] = await Promise.all([
+        api.get<StockMove[]>('/operations/deliveries'),
+        api.get<ProductMini[]>('/products'),
+        api.get<LocationMini[]>('/locations'),
+      ]);
 
-      if (movesError) throw movesError;
       setMoves(movesData || []);
-
-      const { data: prodData } = await supabase.from('products').select('*');
-      const { data: locData } = await supabase.from('locations').select('*');
-      
       setProducts(prodData || []);
       setLocations(locData || []);
     } catch (error) {
@@ -58,47 +74,27 @@ export default function Deliveries() {
     e.preventDefault();
     try {
       // Basic check: available stock (optional, RLS or function should handle this ideally)
-      const { error } = await supabase.from('stock_moves').insert([formData]);
-      if (error) throw error;
+      await api.post('/operations/deliveries', formData);
       setIsModalOpen(false);
       loadData();
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Failed to create delivery');
     }
   };
 
-  const handleValidate = async (move: any) => {
+  const handleProcess = async (move: StockMove) => {
     setValidatingId(move.id);
     try {
-      // 1. Check current stock level at source
-      const { data: existingLevel } = await supabase
-        .from('stock_levels')
-        .select('quantity')
-        .eq('product_id', move.product_id)
-        .eq('location_id', move.from_location_id)
-        .single();
-
-      if (!existingLevel || existingLevel.quantity < move.quantity) {
-        throw new Error('Not enough stock available at the selected location.');
+      if (move.status === 'draft') {
+        // Step 1: Confirm Pick/Pack (Status: pending)
+        await api.put(`/operations/moves/${move.id}`, { status: 'pending' });
+      } else if (move.status === 'pending') {
+        // Step 2: Validate Delivery (Decrement Stock)
+        await api.post(`/operations/moves/${move.id}/validate`, {});
       }
-
-      // 2. Decrement stock
-      await supabase
-        .from('stock_levels')
-        .update({ quantity: existingLevel.quantity - move.quantity })
-        .eq('product_id', move.product_id)
-        .eq('location_id', move.from_location_id);
-
-      // 3. Mark move as 'done'
-      const { error } = await supabase
-        .from('stock_moves')
-        .update({ status: 'done', completed_at: new Date() })
-        .eq('id', move.id);
-
-      if (error) throw error;
       loadData();
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Failed to process delivery');
     } finally {
       setValidatingId(null);
     }
@@ -152,19 +148,29 @@ export default function Deliveries() {
                   <td className="py-4 px-6 text-sm font-bold text-slate-700">{move.from_loc?.name}</td>
                   <td className="py-4 px-6 text-sm font-mono font-bold text-slate-900">{move.quantity}</td>
                   <td className="py-4 px-6">
-                    <span className={`pill-badge-${move.status === 'done' ? 'green' : 'yellow'}`}>
-                      {move.status}
+                    <span className={`pill-badge-${move.status === 'done' ? 'green' : move.status === 'pending' ? 'blue' : 'yellow'}`}>
+                      {move.status === 'done' ? 'Completed' : move.status === 'pending' ? 'Ready (Packed)' : move.status}
                     </span>
                   </td>
                   <td className="py-4 px-6 text-right">
                     {move.status === 'draft' && (
                       <button 
-                        onClick={() => handleValidate(move)}
+                        onClick={() => handleProcess(move)}
+                        disabled={validatingId === move.id}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5 ml-auto"
+                      >
+                        {validatingId === move.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+                        Confirm Pick/Pack
+                      </button>
+                    )}
+                    {move.status === 'pending' && (
+                      <button 
+                        onClick={() => handleProcess(move)}
                         disabled={validatingId === move.id}
                         className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5 ml-auto"
                       >
                         {validatingId === move.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
-                        Confirm Pick/Pack
+                        Validate Delivery
                       </button>
                     )}
                   </td>
@@ -223,7 +229,7 @@ export default function Deliveries() {
                   onChange={e => setFormData({...formData, to_location_id: e.target.value})}
                 >
                   <option value="">Select Customer/Store...</option>
-                  {locations.filter(l => l.type === 'customer' || l.type === 'vendor').map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                  {locations.filter(l => l.type === 'virtual_customer').map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                 </select>
               </div>
               <div className="pt-4 flex justify-end gap-3">

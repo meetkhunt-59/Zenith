@@ -1,29 +1,65 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/api';
 import { Search, ArrowRight } from 'lucide-react';
 
+interface ProductMini {
+  id: string;
+  name: string;
+  sku: string;
+  category_id: string;
+}
+
+interface LocationMini {
+  id: string;
+  name: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface StockMove {
+  id: string;
+  type: string;
+  status: string;
+  quantity: number;
+  created_at: string;
+  product_id: string;
+  from_location_id: string | null;
+  to_location_id: string | null;
+  product?: ProductMini | null;
+  from_loc?: LocationMini | null;
+  to_loc?: LocationMini | null;
+}
+
 export default function MoveHistory() {
-  const [moves, setMoves] = useState<any[]>([]);
+  const [moves, setMoves] = useState<StockMove[]>([]);
+  const [locations, setLocations] = useState<LocationMini[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterLocation, setFilterLocation] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from('stock_moves')
-        .select(`
-          *,
-          product:products(name, sku, category_id),
-          from_loc:locations!from_location_id(name),
-          to_loc:locations!to_location_id(name)
-        `)
-        .order('created_at', { ascending: false });
-      
-      setMoves(data || []);
-      setLoading(false);
+      try {
+        const [movesData, locData, catData] = await Promise.all([
+          api.get<StockMove[]>('/operations/moves'),
+          api.get<LocationMini[]>('/locations'),
+          api.get<Category[]>('/products/categories').catch(() => []),
+        ]);
+
+        setLocations(locData || []);
+        setCategories(catData || []);
+        setMoves(movesData || []);
+      } finally {
+        setLoading(false);
+      }
     };
     loadData();
   }, []);
@@ -33,8 +69,10 @@ export default function MoveHistory() {
                           m.id.toLowerCase().includes(search.toLowerCase());
     const matchesType = filterType === 'all' || m.type === filterType;
     const matchesStatus = filterStatus === 'all' || m.status === filterStatus;
+    const matchesLoc = filterLocation === 'all' || m.from_location_id === filterLocation || m.to_location_id === filterLocation;
+    const matchesCat = filterCategory === 'all' || m.product?.category_id === filterCategory;
     
-    return matchesSearch && matchesType && matchesStatus;
+    return matchesSearch && matchesType && matchesStatus && matchesLoc && matchesCat;
   });
 
   return (
@@ -45,16 +83,36 @@ export default function MoveHistory() {
           <p className="text-sm font-medium text-slate-500 mt-1">Audit log of all inventory movements and adjustments</p>
         </div>
         <div className="flex gap-4 items-center">
-          <div className="relative w-64">
+          <div className="relative w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
               type="text" 
-              placeholder="Search Reference..." 
+              placeholder="Search..." 
               className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
+          <select 
+            className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700"
+            value={filterLocation}
+            onChange={e => setFilterLocation(e.target.value)}
+          >
+            <option value="all">All Locations</option>
+            {locations.map(loc => (
+              <option key={loc.id} value={loc.id}>{loc.name}</option>
+            ))}
+          </select>
+          <select 
+            className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700"
+            value={filterCategory}
+            onChange={e => setFilterCategory(e.target.value)}
+          >
+            <option value="all">All Categories</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
           <select 
             className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700"
             value={filterType}
@@ -73,7 +131,9 @@ export default function MoveHistory() {
           >
             <option value="all">All Statuses</option>
             <option value="draft">Draft</option>
-            <option value="done">Done</option>
+            <option value="pending">Pending</option>
+            <option value="done">Completed</option>
+            <option value="cancelled">Cancelled</option>
           </select>
         </div>
       </div>
@@ -122,8 +182,8 @@ export default function MoveHistory() {
                     </div>
                   </td>
                   <td className="py-4 px-6">
-                    <span className={`pill-badge-${move.status === 'done' ? 'green' : 'yellow'}`}>
-                      {move.status}
+                    <span className={`pill-badge-${move.status === 'done' ? 'green' : move.status === 'pending' ? 'blue' : 'yellow'}`}>
+                      {move.status === 'done' ? 'Completed' : move.status === 'pending' ? 'Pending' : move.status}
                     </span>
                   </td>
                 </tr>

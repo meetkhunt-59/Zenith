@@ -1,45 +1,63 @@
 from datetime import datetime
-from typing import List
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.domain import DocumentStatus, DocumentType
+from app.models.inventory import StockMoveStatus, StockMoveType
 
 
-class LedgerEntryCreate(BaseModel):
+class StockMoveCreate(BaseModel):
     product_id: UUID
-    quantity: int = Field(gt=0, description="Absolute quantity for the transaction.")
+    from_location_id: UUID | None = None
+    to_location_id: UUID | None = None
+    quantity: int = Field(ge=0)
+    type: StockMoveType
+    status: StockMoveStatus = StockMoveStatus.draft
 
 
-# For standard movements (Receipts, Deliveries, Transfers)
-class DocumentCreate(BaseModel):
-    type: DocumentType
-    reference_number: str
-    source_location_id: UUID | None = None
-    destination_location_id: UUID | None = None
-    items: List[LedgerEntryCreate]
+class StockMoveUpdate(BaseModel):
+    status: StockMoveStatus | None = None
 
 
-class DocumentResponse(BaseModel):
+class ProductMini(BaseModel):
     id: UUID
-    type: DocumentType
-    status: DocumentStatus
-    reference_number: str
-    created_by: UUID
-    source_location_id: UUID | None
-    destination_location_id: UUID | None
-    created_at: datetime
-    updated_at: datetime
+    name: str
+    sku: str
+    category_id: UUID
 
     model_config = ConfigDict(from_attributes=True)
 
 
-# For stock adjustments during physical counts
-class StockAdjustmentCreate(BaseModel):
-    location_id: UUID
+class LocationMini(BaseModel):
+    id: UUID
+    name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class StockMoveResponse(BaseModel):
+    id: UUID
     product_id: UUID
-    counted_quantity: int = Field(
-        ge=0, description="The newly counted total real stock available."
-    )
-    reference_number: str
+    from_location_id: UUID | None
+    to_location_id: UUID | None
+    quantity: int
+    type: StockMoveType
+    status: StockMoveStatus
+    created_by: UUID | None
+    created_at: datetime
+    completed_at: datetime | None
+
+    product: ProductMini | None = None
+    from_loc: LocationMini | None = None
+    to_loc: LocationMini | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class StockLevelResponse(BaseModel):
+    product_id: UUID
+    location_id: UUID
+    quantity: int
+    last_updated: datetime
+
+    model_config = ConfigDict(from_attributes=True)

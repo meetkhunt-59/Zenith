@@ -1,93 +1,144 @@
+from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_db
-from app.models.domain import DocumentType, StockBalance
-from app.schemas.operations import (
-    DocumentCreate,
-    DocumentResponse,
-    LedgerEntryCreate,
-    StockAdjustmentCreate,
-)
-from app.services.inventory import cancel_document, process_document
+from app.models.inventory import StockMove, StockMoveStatus, StockMoveType
+from app.schemas.operations import StockMoveCreate, StockMoveResponse, StockMoveUpdate
+from app.services.inventory import validate_move
 
 router = APIRouter()
 
 
-@router.post("/receipts", response_model=DocumentResponse)
-async def create_receipt(
-    doc_in: DocumentCreate, user_id: UUID, db: AsyncSession = Depends(get_db)
-):
-    if doc_in.type != DocumentType.receipt:
-        raise HTTPException(400, "Document type must be receipt")
-    return await process_document(db, doc_in, user_id)
-
-
-@router.post("/deliveries", response_model=DocumentResponse)
-async def create_delivery(
-    doc_in: DocumentCreate, user_id: UUID, db: AsyncSession = Depends(get_db)
-):
-    if doc_in.type != DocumentType.delivery:
-        raise HTTPException(400, "Document type must be delivery")
-    return await process_document(db, doc_in, user_id)
-
-
-@router.post("/transfers", response_model=DocumentResponse)
-async def create_transfer(
-    doc_in: DocumentCreate, user_id: UUID, db: AsyncSession = Depends(get_db)
-):
-    if doc_in.type != DocumentType.transfer:
-        raise HTTPException(400, "Document type must be transfer")
-    if not doc_in.source_location_id or not doc_in.destination_location_id:
-        raise HTTPException(
-            400, "Transfers require both source and destination locations"
+def _moves_query(move_type: StockMoveType | None = None):
+    stmt = (
+        select(StockMove)
+        .options(
+            selectinload(StockMove.product),
+            selectinload(StockMove.from_loc),
+            selectinload(StockMove.to_loc),
         )
-    return await process_document(db, doc_in, user_id)
-
-
-@router.post("/adjustments", response_model=DocumentResponse)
-async def create_adjustment(
-    adj_in: StockAdjustmentCreate, user_id: UUID, db: AsyncSession = Depends(get_db)
-):
-    # Calculate the difference between physical count and system count
-    result = await db.execute(
-        select(StockBalance).where(
-            StockBalance.product_id == adj_in.product_id,
-            StockBalance.location_id == adj_in.location_id,
-        )
+        .order_by(StockMove.created_at.desc())
     )
-    balance = result.scalars().first()
-    system_qty = balance.quantity if balance else 0
-
-    difference = adj_in.counted_quantity - system_qty
-
-    if difference == 0:
-        raise HTTPException(
-            400, "Counted quantity matches system quantity; no adjustment needed."
-        )
-
-    doc_in = DocumentCreate(
-        type=DocumentType.adjustment,
-        reference_number=adj_in.reference_number,
-        # We record the location as destination for positive adjustments, source for negative
-        destination_location_id=adj_in.location_id if difference > 0 else None,
-        source_location_id=adj_in.location_id if difference < 0 else None,
-        items=[
-            LedgerEntryCreate(product_id=adj_in.product_id, quantity=abs(difference))
-        ],
-    )
-    # The `process_document` service handles standard type mappings:
-    # For adjustments, we can trick it by treating it like a receipt (diff > 0) or delivery (diff < 0)
-    # Or expand `process_document` to explicitly handle adjustments.
-    # Let's cleanly expand `process_document` in the service to support `adjustment` natively.
-    return await process_document(db, doc_in, user_id)
+    if move_type:
+        stmt = stmt.where(StockMove.type == move_type)
+    return stmt
 
 
-@router.post("/{document_id}/cancel", response_model=DocumentResponse)
-async def cancel_doc(
-    document_id: UUID, user_id: UUID, db: AsyncSession = Depends(get_db)
+@router.get("/moves", response_model=List[StockMoveResponse])
+async def list_moves(
+    type: StockMoveType | None = None,  # noqa: A002 (FastAPI param name)
+    status: StockMoveStatus | None = None,
+    db: AsyncSession = Depends(get_db),
 ):
-    return await cancel_document(db, document_id, user_id)
+    stmt = _moves_query(type)
+    if status:
+        stmt = stmt.where(StockMove.status == status)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+@router.post("/moves", response_model=StockMoveResponse)
+async def create_move(payload: StockMoveCreate, db: AsyncSession = Depends(get_db)):
+    if payload.type != StockMoveType.adjustment and payload.quantity <= 0:
+        raise HTTPException(status_code=400, detail="quantity must be > 0")
+
+    if payload.type == StockMoveType.receipt and not payload.to_location_id:
+        raise HTTPException(status_code=400, detail="Receipt requires to_location_id")
+    if payload.type == StockMoveType.delivery and not payload.from_location_id:
+        raise HTTPException(status_code=400, detail="Delivery requires from_location_id")
+    if payload.type == StockMoveType.transfer and (
+        not payload.from_location_id or not payload.to_location_id
+    ):
+        raise HTTPException(
+            status_code=400, detail="Transfer requires from_location_id and to_location_id"
+        )
+    if payload.type == StockMoveType.adjustment and not payload.to_location_id:
+        raise HTTPException(status_code=400, detail="Adjustment requires to_location_id")
+
+    move = StockMove(**payload.model_dump())
+    db.add(move)
+    await db.commit()
+    # Re-load with relationships for a richer response
+    result = await db.execute(_moves_query().where(StockMove.id == move.id))
+    return result.scalars().first()
+
+
+@router.post("/moves/{move_id}/validate", response_model=StockMoveResponse)
+async def validate_move_endpoint(move_id: UUID, db: AsyncSession = Depends(get_db)):
+    move = await validate_move(db, move_id)
+    # Ensure relationships are available for the response model
+    await db.refresh(move, attribute_names=["product", "from_loc", "to_loc"])
+    return move
+
+
+@router.put("/moves/{move_id}", response_model=StockMoveResponse)
+async def update_move(move_id: UUID, payload: StockMoveUpdate, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(_moves_query().where(StockMove.id == move_id))
+    move = result.scalars().first()
+    if not move:
+        raise HTTPException(status_code=404, detail="Move not found")
+
+    data = payload.model_dump(exclude_unset=True)
+    if "status" in data and data["status"] is not None:
+        move.status = data["status"]
+
+    await db.commit()
+    await db.refresh(move)
+    return move
+
+
+@router.get("/receipts", response_model=List[StockMoveResponse])
+async def list_receipts(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(_moves_query(StockMoveType.receipt))
+    return result.scalars().all()
+
+
+@router.post("/receipts", response_model=StockMoveResponse)
+async def create_receipt(payload: StockMoveCreate, db: AsyncSession = Depends(get_db)):
+    if payload.type != StockMoveType.receipt:
+        raise HTTPException(status_code=400, detail="type must be receipt")
+    return await create_move(payload, db)
+
+
+@router.get("/deliveries", response_model=List[StockMoveResponse])
+async def list_deliveries(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(_moves_query(StockMoveType.delivery))
+    return result.scalars().all()
+
+
+@router.post("/deliveries", response_model=StockMoveResponse)
+async def create_delivery(payload: StockMoveCreate, db: AsyncSession = Depends(get_db)):
+    if payload.type != StockMoveType.delivery:
+        raise HTTPException(status_code=400, detail="type must be delivery")
+    return await create_move(payload, db)
+
+
+@router.get("/transfers", response_model=List[StockMoveResponse])
+async def list_transfers(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(_moves_query(StockMoveType.transfer))
+    return result.scalars().all()
+
+
+@router.post("/transfers", response_model=StockMoveResponse)
+async def create_transfer(payload: StockMoveCreate, db: AsyncSession = Depends(get_db)):
+    if payload.type != StockMoveType.transfer:
+        raise HTTPException(status_code=400, detail="type must be transfer")
+    return await create_move(payload, db)
+
+
+@router.get("/adjustments", response_model=List[StockMoveResponse])
+async def list_adjustments(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(_moves_query(StockMoveType.adjustment))
+    return result.scalars().all()
+
+
+@router.post("/adjustments", response_model=StockMoveResponse)
+async def create_adjustment(payload: StockMoveCreate, db: AsyncSession = Depends(get_db)):
+    if payload.type != StockMoveType.adjustment:
+        raise HTTPException(status_code=400, detail="type must be adjustment")
+    return await create_move(payload, db)

@@ -1,13 +1,39 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/api';
 import {ArrowRightLeft, Plus, Loader2, CheckCircle2 } from 'lucide-react';
 
+interface ProductMini {
+  id: string;
+  name: string;
+  sku?: string;
+}
+
+interface LocationMini {
+  id: string;
+  name: string;
+  type?: string;
+}
+
+interface StockMove {
+  id: string;
+  product_id: string;
+  from_location_id: string | null;
+  to_location_id: string | null;
+  quantity: number;
+  type: string;
+  status: string;
+  created_at: string;
+  product?: ProductMini | null;
+  from_loc?: LocationMini | null;
+  to_loc?: LocationMini | null;
+}
+
 export default function Transfers() {
-  const [moves, setMoves] = useState<any[]>([]);
+  const [moves, setMoves] = useState<StockMove[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [products, setProducts] = useState<any[]>([]);
-  const [locations, setLocations] = useState<any[]>([]);
+  const [products, setProducts] = useState<ProductMini[]>([]);
+  const [locations, setLocations] = useState<LocationMini[]>([]);
   const [validatingId, setValidatingId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -22,22 +48,13 @@ export default function Transfers() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const { data: movesData } = await supabase
-        .from('stock_moves')
-        .select(`
-          *,
-          product:products(name, sku),
-          from_loc:locations!from_location_id(name),
-          to_loc:locations!to_location_id(name)
-        `)
-        .eq('type', 'transfer')
-        .order('created_at', { ascending: false });
+      const [movesData, prodData, locData] = await Promise.all([
+        api.get<StockMove[]>('/operations/transfers'),
+        api.get<ProductMini[]>('/products'),
+        api.get<LocationMini[]>('/locations'),
+      ]);
 
       setMoves(movesData || []);
-
-      const { data: prodData } = await supabase.from('products').select('*');
-      const { data: locData } = await supabase.from('locations').select('*');
-      
       setProducts(prodData || []);
       setLocations(locData || []);
     } catch (error) {
@@ -54,71 +71,21 @@ export default function Transfers() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = await supabase.from('stock_moves').insert([formData]);
-      if (error) throw error;
+      await api.post('/operations/transfers', formData);
       setIsModalOpen(false);
       loadData();
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Failed to create transfer');
     }
   };
 
-  const handleValidate = async (move: any) => {
+  const handleValidate = async (move: StockMove) => {
     setValidatingId(move.id);
     try {
-      // 1. Check current stock level at source
-      const { data: sourceLevel } = await supabase
-        .from('stock_levels')
-        .select('quantity')
-        .eq('product_id', move.product_id)
-        .eq('location_id', move.from_location_id)
-        .single();
-
-      if (!sourceLevel || sourceLevel.quantity < move.quantity) {
-        throw new Error('Insufficient stock at source location.');
-      }
-
-      // 2. Decrement source
-      await supabase
-        .from('stock_levels')
-        .update({ quantity: sourceLevel.quantity - move.quantity })
-        .eq('product_id', move.product_id)
-        .eq('location_id', move.from_location_id);
-
-      // 3. Increment destination
-      const { data: destLevel } = await supabase
-        .from('stock_levels')
-        .select('quantity')
-        .eq('product_id', move.product_id)
-        .eq('location_id', move.to_location_id)
-        .single();
-
-      if (destLevel) {
-        await supabase
-          .from('stock_levels')
-          .update({ quantity: destLevel.quantity + move.quantity })
-          .eq('product_id', move.product_id)
-          .eq('location_id', move.to_location_id);
-      } else {
-        await supabase
-          .from('stock_levels')
-          .insert([{ 
-            product_id: move.product_id, 
-            location_id: move.to_location_id, 
-            quantity: move.quantity 
-          }]);
-      }
-
-      // 4. Mark move as 'done'
-      const { error } = await supabase
-        .from('stock_moves')
-        .update({ status: 'done', completed_at: new Date() })
-        .eq('id', move.id);
-
-      if (error) throw error;
+      await api.post(`/operations/moves/${move.id}/validate`, {});
       loadData();
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Failed to execute transfer');
     } finally {
       setValidatingId(null);
     }

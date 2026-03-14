@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS stock_moves (
   product_id UUID REFERENCES public.products(id) ON DELETE RESTRICT,
   from_location_id UUID REFERENCES locations(id) ON DELETE RESTRICT,
   to_location_id UUID REFERENCES locations(id) ON DELETE RESTRICT,
-  quantity INTEGER NOT NULL CHECK (quantity > 0),
+  quantity INTEGER NOT NULL CHECK (quantity >= 0),
   type TEXT NOT NULL CHECK (type IN ('receipt', 'delivery', 'transfer', 'adjustment')),
   status TEXT NOT NULL CHECK (status IN ('draft', 'pending', 'done', 'cancelled')) DEFAULT 'draft',
   created_by UUID REFERENCES profiles(id) ON DELETE SET NULL,

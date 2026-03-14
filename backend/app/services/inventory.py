@@ -1,200 +1,112 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.domain import (
-    Document,
-    DocumentStatus,
-    DocumentType,
-    StockBalance,
-    StockLedgerEntry,
-)
-from app.schemas.operations import DocumentCreate
+from app.models.inventory import StockLevel, StockMove, StockMoveStatus, StockMoveType
 
 
-async def process_document(
-    db: AsyncSession, doc_in: DocumentCreate, user_id: UUID
-) -> Document:
-    # 1. Create Document
-    doc = Document(
-        type=doc_in.type,
-        reference_number=doc_in.reference_number,
-        source_location_id=doc_in.source_location_id,
-        destination_location_id=doc_in.destination_location_id,
-        created_by=user_id,
-        status=DocumentStatus.done,  # Auto-validate for immediate processing
-    )
-    db.add(doc)
-    await db.flush()  # ensure document gets an ID
-
-    # 2. Process Items
-    for item in doc_in.items:
-        try:
-            if doc_in.type == DocumentType.receipt:
-                await apply_stock_change(
-                    db,
-                    item.product_id,
-                    doc_in.destination_location_id,
-                    item.quantity,
-                    doc.id,
-                    user_id,
-                )
-
-            elif doc_in.type == DocumentType.delivery:
-                await apply_stock_change(
-                    db,
-                    item.product_id,
-                    doc_in.source_location_id,
-                    -item.quantity,
-                    doc.id,
-                    user_id,
-                )
-
-            elif doc_in.type == DocumentType.transfer:
-                await apply_stock_change(
-                    db,
-                    item.product_id,
-                    doc_in.source_location_id,
-                    -item.quantity,
-                    doc.id,
-                    user_id,
-                )
-                await apply_stock_change(
-                    db,
-                    item.product_id,
-                    doc_in.destination_location_id,
-                    item.quantity,
-                    doc.id,
-                    user_id,
-                )
-
-            elif doc_in.type == DocumentType.adjustment:
-                if doc_in.destination_location_id:
-                    await apply_stock_change(
-                        db,
-                        item.product_id,
-                        doc_in.destination_location_id,
-                        item.quantity,
-                        doc.id,
-                        user_id,
-                    )
-                elif doc_in.source_location_id:
-                    await apply_stock_change(
-                        db,
-                        item.product_id,
-                        doc_in.source_location_id,
-                        -item.quantity,
-                        doc.id,
-                        user_id,
-                    )
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
-
-    try:
-        await db.commit()
-        await db.refresh(doc)
-        return doc
-    except Exception as e:
-        await db.rollback()
-        # SQLAlchemy handles optimistic locking by throwing StaleDataError or similar on flush
-        raise HTTPException(
-            status_code=409,
-            detail=f"Transaction Failed or Concurrency Conflict: {str(e)}",
-        )
+async def get_move(db: AsyncSession, move_id: UUID) -> StockMove:
+    result = await db.execute(select(StockMove).where(StockMove.id == move_id))
+    move = result.scalars().first()
+    if not move:
+        raise HTTPException(status_code=404, detail="Move not found")
+    return move
 
 
-async def apply_stock_change(
-    db: AsyncSession,
-    product_id: UUID,
-    location_id: UUID | None,
-    qty_change: int,
-    document_id: UUID,
-    user_id: UUID,
-):
-    if not location_id:
-        raise ValueError("Location required for stock change")
+async def upsert_stock_level(
+    db: AsyncSession, *, product_id: UUID, location_id: UUID, new_quantity: int
+) -> StockLevel:
+    if new_quantity < 0:
+        raise HTTPException(status_code=400, detail="Stock level cannot be negative")
 
     result = await db.execute(
-        select(StockBalance).where(
-            StockBalance.product_id == product_id,
-            StockBalance.location_id == location_id,
+        select(StockLevel).where(
+            and_(
+                StockLevel.product_id == product_id,
+                StockLevel.location_id == location_id,
+            )
         )
     )
-    balance = result.scalars().first()
+    level = result.scalars().first()
+    if not level:
+        level = StockLevel(product_id=product_id, location_id=location_id, quantity=new_quantity)
+        db.add(level)
+        return level
 
-    if not balance:
-        if qty_change < 0:
-            raise ValueError(
-                f"Insufficient stock for product {product_id} at location {location_id}"
+    level.quantity = new_quantity
+    return level
+
+
+async def add_to_stock_level(
+    db: AsyncSession, *, product_id: UUID, location_id: UUID, delta: int
+) -> StockLevel:
+    result = await db.execute(
+        select(StockLevel).where(
+            and_(
+                StockLevel.product_id == product_id,
+                StockLevel.location_id == location_id,
             )
-        balance = StockBalance(
-            product_id=product_id, location_id=location_id, quantity=qty_change
         )
-        db.add(balance)
-    else:
-        if balance.quantity + qty_change < 0:
-            raise ValueError(
-                f"Insufficient stock for product {product_id} at location {location_id}"
-            )
-        balance.quantity += qty_change
-        # SQLAlchemy's version_id_col handles the concurrency check automatically during UPDATE
-
-    entry = StockLedgerEntry(
-        document_id=document_id,
-        product_id=product_id,
-        location_id=location_id,
-        quantity_change=qty_change,
-        created_by=user_id,
     )
-    db.add(entry)
+    level = result.scalars().first()
+    current = level.quantity if level else 0
+    next_qty = current + delta
+    if next_qty < 0:
+        raise HTTPException(status_code=400, detail="Insufficient stock for this operation")
+    return await upsert_stock_level(db, product_id=product_id, location_id=location_id, new_quantity=next_qty)
 
 
-async def cancel_document(
-    db: AsyncSession, document_id: UUID, user_id: UUID
-) -> Document:
-    # Fetch Document
-    result = await db.execute(select(Document).where(Document.id == document_id))
-    doc = result.scalars().first()
+async def validate_move(db: AsyncSession, move_id: UUID) -> StockMove:
+    move = await get_move(db, move_id)
 
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+    if move.status in (StockMoveStatus.done, StockMoveStatus.cancelled):
+        raise HTTPException(status_code=400, detail=f"Move is already {move.status.value}")
 
-    if doc.status == DocumentStatus.canceled:
-        raise HTTPException(status_code=400, detail="Document already canceled")
+    if move.type == StockMoveType.receipt:
+        if not move.to_location_id:
+            raise HTTPException(status_code=400, detail="Receipt requires to_location_id")
+        await add_to_stock_level(
+            db, product_id=move.product_id, location_id=move.to_location_id, delta=move.quantity
+        )
 
-    # Fetch original ledger entries
-    entries_result = await db.execute(
-        select(StockLedgerEntry).where(StockLedgerEntry.document_id == doc.id)
-    )
-    original_entries = entries_result.scalars().all()
+    elif move.type == StockMoveType.delivery:
+        if not move.from_location_id:
+            raise HTTPException(status_code=400, detail="Delivery requires from_location_id")
+        await add_to_stock_level(
+            db, product_id=move.product_id, location_id=move.from_location_id, delta=-move.quantity
+        )
 
-    # Revert all changes
-    for entry in original_entries:
-        try:
-            # We reverse the change (if it was +5, we do -5)
-            await apply_stock_change(
-                db,
-                entry.product_id,
-                entry.location_id,
-                -entry.quantity_change,
-                doc.id,
-                user_id,
-            )
-        except ValueError as e:
+    elif move.type == StockMoveType.transfer:
+        if not move.from_location_id or not move.to_location_id:
             raise HTTPException(
-                status_code=400, detail=f"Cannot revert stock: {str(e)}"
+                status_code=400, detail="Transfer requires from_location_id and to_location_id"
             )
+        await add_to_stock_level(
+            db, product_id=move.product_id, location_id=move.from_location_id, delta=-move.quantity
+        )
+        await add_to_stock_level(
+            db, product_id=move.product_id, location_id=move.to_location_id, delta=move.quantity
+        )
 
-    doc.status = DocumentStatus.canceled
+    elif move.type == StockMoveType.adjustment:
+        if not move.to_location_id:
+            raise HTTPException(status_code=400, detail="Adjustment requires to_location_id")
+        await upsert_stock_level(
+            db, product_id=move.product_id, location_id=move.to_location_id, new_quantity=move.quantity
+        )
+
+    move.status = StockMoveStatus.done
+    move.completed_at = datetime.now(timezone.utc)
 
     try:
         await db.commit()
-        await db.refresh(doc)
-        return doc
-    except Exception as e:
+    except Exception as exc:
         await db.rollback()
-        raise HTTPException(
-            status_code=409, detail=f"Cancel Failed or Concurrency Conflict: {str(e)}"
-        )
+        raise HTTPException(status_code=409, detail=f"Validation failed: {str(exc)}")
+
+    await db.refresh(move)
+    return move
+

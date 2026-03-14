@@ -32,6 +32,9 @@ class User(Base):
 class LocationType(str, enum.Enum):
     warehouse = "warehouse"
     rack = "rack"
+    production = "production"
+    vendor = "vendor"
+    customer = "customer"
     virtual_customer = "virtual_customer"
     virtual_vendor = "virtual_vendor"
 
@@ -41,7 +44,7 @@ class Location(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(100), index=True)
-    type: Mapped[LocationType] = mapped_column(Enum(LocationType))
+    type: Mapped[LocationType] = mapped_column(Enum(LocationType, native_enum=False))
     parent_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("locations.id"), nullable=True
     )
