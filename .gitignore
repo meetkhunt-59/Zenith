@@ -1,0 +1,69 @@
+# macOS
+.DS_Store
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Node / JS / Web
+node_modules/
+dist/
+build/
+.next/
+out/
+coverage/
+.nyc_output/
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env_back/
+
+# Supabase / Env Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+supabase/.temp/
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Zenith / Agentic Logs
+.agent
+*.sqlite3
+
+
+# Other
+Problam-Statement
