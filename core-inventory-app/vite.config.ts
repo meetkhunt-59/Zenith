@@ -8,4 +8,16 @@ export default defineConfig({
     react(),
     tailwindcss(), // Add this plugin
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          supabase: ['@supabase/supabase-js'],
+          charts: ['recharts'],
+          icons: ['lucide-react'],
+        },
+      },
+    },
+  },
 })

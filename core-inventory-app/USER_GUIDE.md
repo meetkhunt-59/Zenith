@@ -1,6 +1,6 @@
-# CoreInventory User Guide
+# Zenith User Guide
 
-Welcome to the **CoreInventory** management system. This guide will help you navigate the application and perform essential inventory operations efficiently.
+Welcome to the **Zenith** management system. This guide will help you navigate the application and perform essential inventory operations efficiently.
 
 ## Table of Contents
 1. [Authentication & Profile](#1-authentication--profile)

@@ -20,7 +20,7 @@ import Adjustments from './pages/Operations/Adjustments';
 
 
 // --- Router Layout Wrapper ---
-const AppLayout = ({ userEmail }: { userEmail: string }) => {
+const AppLayout = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const location = useLocation();
 
@@ -29,38 +29,39 @@ const AppLayout = ({ userEmail }: { userEmail: string }) => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen bg-[#f4f7f9] overflow-hidden">
-      {/* Desktop sidebar */}
-      <Sidebar className="hidden lg:flex" />
+    <div className="min-h-screen p-3 sm:p-5 lg:p-6">
+      <div className="app-panel flex min-h-[calc(100vh-24px)] h-[calc(100vh-24px)] overflow-hidden sm:min-h-[calc(100vh-40px)] sm:h-[calc(100vh-40px)] lg:min-h-[calc(100vh-48px)] lg:h-[calc(100vh-48px)]">
+        {/* Desktop sidebar */}
+        <Sidebar className="hidden shrink-0 lg:flex h-full sticky top-0" />
 
-      {/* Mobile sidebar overlay */}
-      <div
-        className={`fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-[1px] transition-opacity lg:hidden ${
-          mobileNavOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={() => setMobileNavOpen(false)}
-        aria-hidden={!mobileNavOpen}
-      />
-      <div
-        className={`fixed inset-y-0 left-0 z-50 lg:hidden transform transition-transform duration-200 ${
-          mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-        aria-hidden={!mobileNavOpen}
-      >
-        <Sidebar
-          showClose
-          onClose={() => setMobileNavOpen(false)}
-          onNavigate={() => setMobileNavOpen(false)}
-          className="shadow-2xl"
+        {/* Mobile sidebar overlay */}
+        <div
+          className={`fixed inset-0 z-40 bg-slate-950/25 backdrop-blur-[3px] transition-opacity lg:hidden ${
+            mobileNavOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+          }`}
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden={!mobileNavOpen}
         />
-      </div>
+        <div
+          className={`fixed inset-y-0 left-0 z-50 w-[88vw] max-w-[320px] transform transition-transform duration-200 lg:hidden ${
+            mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+          aria-hidden={!mobileNavOpen}
+        >
+          <Sidebar
+            showClose
+            onClose={() => setMobileNavOpen(false)}
+            onNavigate={() => setMobileNavOpen(false)}
+            className="h-full"
+          />
+        </div>
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <div className="p-4 sm:p-8 lg:p-20 pb-24 sm:pb-32">
-          <div className="max-w-[1600px] mx-auto">
-            <Topbar userEmail={userEmail} onMenuClick={() => setMobileNavOpen(true)} />
-            {/* The routed content goes here */}
-            <Outlet />
+        <div className="flex min-w-0 flex-1 flex-col h-full overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-3 pb-6 pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-6 lg:pb-10 lg:pt-6">
+            <div className="mx-auto flex max-w-[1600px] flex-col gap-6">
+              <Topbar onMenuClick={() => setMobileNavOpen(true)} />
+              <Outlet />
+            </div>
           </div>
         </div>
       </div>
@@ -90,8 +91,14 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f4f7f9]">
-        <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="surface-card flex items-center gap-4 !px-6 !py-5">
+          <div className="h-8 w-8 rounded-full border-4 border-[var(--color-brand-green)] border-t-transparent animate-spin"></div>
+          <div>
+            <div className="section-label">Zenith</div>
+            <div className="text-sm font-bold text-slate-900">Loading your workspace</div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -105,7 +112,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<AppLayout userEmail={session.user.email ?? ''} />}>
+        <Route path="/" element={<AppLayout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="products" element={<Products />} />
@@ -116,7 +123,11 @@ export default function App() {
           <Route path="history" element={<History />} />
           <Route path="locations" element={<Locations />} />
           <Route path="settings" element={
-            <div className="premium-card"><h2 className="header-title">Settings Coming Soon</h2></div>
+            <div className="surface-card">
+              <div className="section-label">Settings</div>
+              <h2 className="header-title mt-2">More controls are on the way</h2>
+              <p className="section-copy">Warehouse settings are already available from the sidebar. Additional preferences can live here later without affecting the current backend flows.</p>
+            </div>
           } />
           
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
