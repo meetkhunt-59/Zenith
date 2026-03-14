@@ -68,7 +68,13 @@ export default function MoveHistory() {
     const matchesSearch = m.product?.name?.toLowerCase().includes(search.toLowerCase()) ||
                           m.id.toLowerCase().includes(search.toLowerCase());
     const matchesType = filterType === 'all' || m.type === filterType;
-    const matchesStatus = filterStatus === 'all' || m.status === filterStatus;
+    const matchesStatus =
+      filterStatus === 'all' ||
+      (filterStatus === 'draft' && m.status === 'draft') ||
+      (filterStatus === 'waiting' && m.status === 'draft') ||
+      (filterStatus === 'ready' && m.status === 'pending') ||
+      (filterStatus === 'done' && m.status === 'done') ||
+      (filterStatus === 'canceled' && m.status === 'cancelled');
     const matchesLoc = filterLocation === 'all' || m.from_location_id === filterLocation || m.to_location_id === filterLocation;
     const matchesCat = filterCategory === 'all' || m.product?.category_id === filterCategory;
     
@@ -131,9 +137,10 @@ export default function MoveHistory() {
           >
             <option value="all">All Statuses</option>
             <option value="draft">Draft</option>
-            <option value="pending">Pending</option>
-            <option value="done">Completed</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="waiting">Waiting</option>
+            <option value="ready">Ready</option>
+            <option value="done">Done</option>
+            <option value="canceled">Canceled</option>
           </select>
         </div>
       </div>
@@ -182,8 +189,14 @@ export default function MoveHistory() {
                     </div>
                   </td>
                   <td className="py-4 px-6">
-                    <span className={`pill-badge-${move.status === 'done' ? 'green' : move.status === 'pending' ? 'blue' : 'yellow'}`}>
-                      {move.status === 'done' ? 'Completed' : move.status === 'pending' ? 'Pending' : move.status}
+                    <span className={`pill-badge-${move.status === 'done' ? 'green' : move.status === 'pending' ? 'blue' : move.status === 'cancelled' ? 'red' : 'yellow'}`}>
+                      {move.status === 'done'
+                        ? 'Done'
+                        : move.status === 'pending'
+                          ? 'Ready'
+                          : move.status === 'cancelled'
+                            ? 'Canceled'
+                            : 'Draft'}
                     </span>
                   </td>
                 </tr>

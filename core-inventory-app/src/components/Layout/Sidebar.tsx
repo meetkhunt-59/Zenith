@@ -2,10 +2,20 @@ import { NavLink } from 'react-router-dom';
 import { 
   Home, Package, Share2, ArrowRightLeft, 
   RotateCcw, History, ChevronRight, Sliders, MapPin,
-  User, LogOut
+  User, LogOut, X
 } from 'lucide-react';
 
-export default function Sidebar() {
+export default function Sidebar({
+  className = '',
+  showClose = false,
+  onClose,
+  onNavigate,
+}: {
+  className?: string;
+  showClose?: boolean;
+  onClose?: () => void;
+  onNavigate?: () => void;
+}) {
   const opLinks = [
     { name: 'Receipts', to: '/receipts', icon: <RotateCcw size={18} /> },
     { name: 'Deliveries', to: '/deliveries', icon: <Share2 size={18} /> },
@@ -15,17 +25,30 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 h-full bg-white border-r border-slate-100 flex flex-col py-6 text-left">
-      <div className="px-6 mb-8 flex items-center gap-2">
-        <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white">
-          <Package size={18} />
+    <aside className={`w-64 h-full bg-white border-r border-slate-100 flex flex-col py-6 text-left ${className}`}>
+      <div className="px-6 mb-8 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white">
+            <Package size={18} />
+          </div>
+          <span className="font-bold text-xl tracking-tight text-slate-900">Stockly</span>
         </div>
-        <span className="font-bold text-xl tracking-tight text-slate-900">Stockly</span>
+        {showClose && (
+          <button
+            type="button"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+            onClick={onClose}
+            aria-label="Close menu"
+          >
+            <X size={18} />
+          </button>
+        )}
       </div>
 
       <nav className="flex-1 px-4 space-y-1">
         <NavLink 
           to="/dashboard" 
+          onClick={onNavigate}
           className={({ isActive }) => 
             `flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-all ${
               isActive ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -37,6 +60,7 @@ export default function Sidebar() {
 
         <NavLink 
           to="/products" 
+          onClick={onNavigate}
           className={({ isActive }) => 
             `flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-all ${
               isActive ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -47,6 +71,7 @@ export default function Sidebar() {
         </NavLink>
         <NavLink 
           to="/locations" 
+          onClick={onNavigate}
           className={({ isActive }) => 
             `flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-all ${
               isActive ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -64,6 +89,7 @@ export default function Sidebar() {
           <NavLink 
             key={link.to}
             to={link.to} 
+            onClick={onNavigate}
             className={({ isActive }) => 
               `flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold transition-all group ${
                 isActive ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -96,6 +122,7 @@ export default function Sidebar() {
           onClick={async () => {
              const { supabase } = await import('../../lib/supabase');
              await supabase.auth.signOut();
+             onNavigate?.();
           }}
         >
           <LogOut size={20} /> Logout

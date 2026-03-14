@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 
@@ -21,13 +21,44 @@ import Adjustments from './pages/Operations/Adjustments';
 
 // --- Router Layout Wrapper ---
 const AppLayout = ({ userEmail }: { userEmail: string }) => {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
+
   return (
-    <div className="flex h-screen bg-[#f4f7f9] overflow-hidden">
-      <Sidebar />
+    <div className="flex min-h-screen bg-[#f4f7f9] overflow-hidden">
+      {/* Desktop sidebar */}
+      <Sidebar className="hidden lg:flex" />
+
+      {/* Mobile sidebar overlay */}
+      <div
+        className={`fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-[1px] transition-opacity lg:hidden ${
+          mobileNavOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setMobileNavOpen(false)}
+        aria-hidden={!mobileNavOpen}
+      />
+      <div
+        className={`fixed inset-y-0 left-0 z-50 lg:hidden transform transition-transform duration-200 ${
+          mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        aria-hidden={!mobileNavOpen}
+      >
+        <Sidebar
+          showClose
+          onClose={() => setMobileNavOpen(false)}
+          onNavigate={() => setMobileNavOpen(false)}
+          className="shadow-2xl"
+        />
+      </div>
+
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <div className="p-10 lg:p-20 pb-32">
+        <div className="p-4 sm:p-8 lg:p-20 pb-24 sm:pb-32">
           <div className="max-w-[1600px] mx-auto">
-            <Topbar userEmail={userEmail} />
+            <Topbar userEmail={userEmail} onMenuClick={() => setMobileNavOpen(true)} />
             {/* The routed content goes here */}
             <Outlet />
           </div>
@@ -74,7 +105,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<AppLayout userEmail={session.user.email} />}>
+        <Route path="/" element={<AppLayout userEmail={session.user.email ?? ''} />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="products" element={<Products />} />
