@@ -43,8 +43,14 @@ export default function Auth() {
         if (resetError) throw resetError;
         setMessage('OTP / Password reset link sent! Please check your email.');
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during authentication.');
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'object' && err && 'message' in err && typeof (err as { message: unknown }).message === 'string'
+            ? (err as { message: string }).message
+            : 'An error occurred during authentication.';
+      setError(message);
     } finally {
       setLoading(false);
     }

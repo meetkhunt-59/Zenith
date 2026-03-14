@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { MapPin, Plus, Edit2, Trash2, Warehouse } from 'lucide-react';
 
+interface Location {
+  id: string;
+  name: string;
+  type: string;
+  parent_id: string | null;
+}
+
 export default function Locations() {
-  const [locations, setLocations] = useState<any[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -17,8 +24,13 @@ export default function Locations() {
 
   const loadData = async () => {
     setLoading(true);
-    const { data } = await supabase.from('locations').select('*').order('name');
-    setLocations(data || []);
+    try {
+      const data = await api.get<Location[]>('/locations');
+      setLocations(data || []);
+    } catch (e) {
+      console.error('Failed to load locations:', e);
+      setLocations([]);
+    }
     setLoading(false);
   };
 
@@ -29,14 +41,14 @@ export default function Locations() {
     setSaving(true);
     try {
       if (editingId) {
-        await supabase.from('locations').update(formData).eq('id', editingId);
+        await api.put(`/locations/${editingId}`, formData);
       } else {
-        await supabase.from('locations').insert([formData]);
+        await api.post('/locations', formData);
       }
       setIsModalOpen(false);
       loadData();
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Failed to save location');
     } finally {
       setSaving(false);
     }
@@ -48,7 +60,7 @@ export default function Locations() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (loc: any) => {
+  const openEditModal = (loc: Location) => {
     setEditingId(loc.id);
     setFormData({ name: loc.name, type: loc.type, parent_id: loc.parent_id });
     setIsModalOpen(true);
@@ -56,7 +68,7 @@ export default function Locations() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure?')) return;
-    await supabase.from('locations').delete().eq('id', id);
+    await api.del(`/locations/${id}`);
     loadData();
   };
 
@@ -126,8 +138,8 @@ export default function Locations() {
                 >
                   <option value="warehouse">Warehouse</option>
                   <option value="rack">Rack / Aisle</option>
-                  <option value="customer">Customer Site</option>
-                  <option value="vendor">Vendor Site</option>
+                  <option value="virtual_customer">Customer (Virtual)</option>
+                  <option value="virtual_vendor">Supplier (Virtual)</option>
                 </select>
               </div>
               <div className="pt-6 flex justify-end gap-4">

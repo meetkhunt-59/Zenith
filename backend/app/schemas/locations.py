@@ -16,6 +16,12 @@ class LocationCreate(LocationBase):
     pass
 
 
+class LocationUpdate(BaseModel):
+    name: str | None = None
+    type: LocationType | None = None
+    parent_id: UUID | None = None
+
+
 class LocationResponse(LocationBase):
     id: UUID
     created_at: datetime
