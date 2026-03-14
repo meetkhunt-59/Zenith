@@ -95,14 +95,17 @@ export default function Adjustments() {
 
   return (
     <div className="space-y-10">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Stock Adjustments</h2>
-          <p className="text-sm font-medium text-slate-500 mt-1">Reconcile recorded stock with physical counts</p>
+          <h1 className="text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+            <AlertTriangle size={20} className="text-slate-400" />
+            Stock Adjustments
+          </h1>
+          <p className="text-[13px] font-medium text-slate-500 mt-0.5">Reconcile recorded stock with physical counts</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-slate-900/10"
+          className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm transition-all flex items-center gap-2 w-fit"
         >
           <Plus size={18} /> Cycle Count
         </button>
