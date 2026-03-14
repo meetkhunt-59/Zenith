@@ -113,7 +113,7 @@ function useDashboardData() {
         api.get<Location[]>('/locations'),
         api.get<StockLevel[]>('/stock/levels'),
         api.get<StockMove[]>('/operations/moves'),
-        api.get<Category[]>('/products/categories').catch(() => []), 
+        api.get<Category[]>('/products/categories').catch(() => []),
       ]);
 
       setKpis({ loading: false, error: null, data: kpiRes });
@@ -263,7 +263,7 @@ export default function Dashboard() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out space-y-10 pb-12 w-full max-w-[1500px] mx-auto">
-      
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-8 mt-4">
         <div>
@@ -287,7 +287,7 @@ export default function Dashboard() {
 
       {/* KPIs Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
-        
+
         {kpis.loading ? <KpiSkeleton /> : (
           <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
             <div className="text-sm font-semibold text-slate-500 flex items-center gap-2">
@@ -372,7 +372,7 @@ export default function Dashboard() {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        
+
         {/* Chart Column (Span 2) */}
         <div className="xl:col-span-2 space-y-6">
           {moves.loading ? <SectionSkeleton height="h-[420px]" /> : (
@@ -383,35 +383,35 @@ export default function Dashboard() {
                   <p className="text-sm text-slate-500 mt-1">Receipts vs Deliveries over the last 14 days.</p>
                 </div>
               </div>
-              
+
               {movementSeries.some(m => m.receipt > 0 || m.delivery > 0) ? (
                 <div className="h-[280px] w-full mt-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={movementSeries} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorReceipt" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                         </linearGradient>
                         <linearGradient id="colorDelivery" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f1f5f9" />
-                      <XAxis 
-                        dataKey="label" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} 
+                      <XAxis
+                        dataKey="label"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
                         dy={10}
                       />
-                      <YAxis 
-                        axisLine={false} 
-                        tickLine={false} 
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
                         tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
                       />
-                      <Tooltip 
+                      <Tooltip
                         contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', fontWeight: 500 }}
                         cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
                       />
@@ -432,7 +432,7 @@ export default function Dashboard() {
 
           {/* Bottom row of xl:col-span-2: Locations & Alerts */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
+
             {/* Stock by Location */}
             {stockLevels.loading ? <SectionSkeleton height="h-[340px]" /> : (
               <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
@@ -468,7 +468,7 @@ export default function Dashboard() {
                   <h2 className="text-lg font-bold text-slate-900">Critical Alerts</h2>
                   <Link to="/products" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">View all</Link>
                 </div>
-                
+
                 <div className="flex-1 space-y-3 overflow-y-auto pr-1">
                   {outOfStockProducts.length === 0 && lowStockProducts.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-400">
@@ -477,7 +477,7 @@ export default function Dashboard() {
                     </div>
                   ) : (
                     <>
-                      {outOfStockProducts.slice(0, 3).map(({product}) => (
+                      {outOfStockProducts.slice(0, 3).map(({ product }) => (
                         <div key={product.id} className="flex items-center p-3 rounded-xl border border-red-100 bg-red-50/50">
                           <PackageX size={18} className="text-red-500 mr-3 hidden sm:block" />
                           <div className="flex-1 min-w-0">
@@ -486,7 +486,7 @@ export default function Dashboard() {
                           </div>
                         </div>
                       ))}
-                      {lowStockProducts.slice(0, 4 - Math.min(outOfStockProducts.length, 3)).map(({product, quantity}) => (
+                      {lowStockProducts.slice(0, 4 - Math.min(outOfStockProducts.length, 3)).map(({ product, quantity }) => (
                         <div key={product.id} className="flex items-center p-3 rounded-xl border border-amber-100 bg-amber-50/50">
                           <AlertCircle size={18} className="text-amber-500 mr-3 hidden sm:block" />
                           <div className="flex-1 min-w-0">
@@ -500,10 +500,10 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
-            
-            
+
+
           </div>
- 
+
           {/* Operations Explorer */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-sm">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 border-b border-slate-50 pb-6">
@@ -514,9 +514,9 @@ export default function Dashboard() {
                 </h2>
                 <p className="text-[13px] font-medium text-slate-500 mt-0.5">Advanced drill-down.</p>
               </div>
-              
+
               <div className="flex flex-wrap items-center gap-2">
-                <select 
+                <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
                   className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
@@ -527,8 +527,8 @@ export default function Dashboard() {
                   <option value="transfer">Transfers</option>
                   <option value="adjustment">Adjustments</option>
                 </select>
- 
-                <select 
+
+                <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
@@ -539,8 +539,8 @@ export default function Dashboard() {
                   <option value="ready">Ready</option>
                   <option value="done">Done</option>
                 </select>
- 
-                <select 
+
+                <select
                   value={filterLocId}
                   onChange={(e) => setFilterLocId(e.target.value)}
                   className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
@@ -550,8 +550,8 @@ export default function Dashboard() {
                     <option key={loc.id} value={loc.id}>{loc.name}</option>
                   ))}
                 </select>
- 
-                <select 
+
+                <select
                   value={filterCatId}
                   onChange={(e) => setFilterCatId(e.target.value)}
                   className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
@@ -563,7 +563,7 @@ export default function Dashboard() {
                 </select>
               </div>
             </div>
- 
+
             {filteredMoves.length === 0 ? (
               <div className="py-12 flex flex-col items-center justify-center text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
                 <RefreshCw size={32} className="text-slate-300 mb-3" />
@@ -577,7 +577,7 @@ export default function Dashboard() {
                   const isDelivery = move.type === 'delivery';
                   const Icon = isReceipt ? ArrowDownLeft : isDelivery ? ArrowUpRight : MapPinned;
                   const toneBg = isReceipt ? 'bg-emerald-50 text-emerald-600' : isDelivery ? 'bg-blue-50 text-blue-600' : 'bg-indigo-50 text-indigo-600';
- 
+
                   return (
                     <div key={move.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/30 flex items-center gap-4">
                       <div className={`flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl border ${toneBg}`}>
@@ -585,11 +585,11 @@ export default function Dashboard() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                           <p className="text-sm font-bold text-slate-900 truncate">{product?.name || 'Item'}</p>
-                           <span className="text-sm font-bold text-slate-700">x{move.quantity}</span>
+                          <p className="text-sm font-bold text-slate-900 truncate">{product?.name || 'Item'}</p>
+                          <span className="text-sm font-bold text-slate-700">x{move.quantity}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
-                           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{move.status}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{move.status}</span>
                         </div>
                       </div>
                     </div>
@@ -626,11 +626,11 @@ export default function Dashboard() {
                       const product = productMap[move.product_id];
                       const isReceipt = move.type === 'receipt';
                       const isDelivery = move.type === 'delivery';
-                      
+
                       const Icon = isReceipt ? ArrowDownLeft : isDelivery ? ArrowUpRight : MapPinned;
-                      const toneBg = isReceipt ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                                     isDelivery ? 'bg-blue-50 text-blue-600 border-blue-100' : 
-                                     'bg-indigo-50 text-indigo-600 border-indigo-100';
+                      const toneBg = isReceipt ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                        isDelivery ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                          'bg-indigo-50 text-indigo-600 border-indigo-100';
 
                       return (
                         <div key={move.id} className="group flex items-start gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
@@ -647,11 +647,10 @@ export default function Dashboard() {
                               </span>
                             </div>
                             <div className="flex items-center gap-2 mt-1">
-                              <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                                move.status === 'done' ? 'text-slate-500 bg-slate-100' : 
-                                move.status === 'pending' ? 'text-amber-600 bg-amber-50' : 
-                                'text-slate-400 bg-slate-50 border border-slate-100'
-                              }`}>
+                              <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${move.status === 'done' ? 'text-slate-500 bg-slate-100' :
+                                  move.status === 'pending' ? 'text-amber-600 bg-amber-50' :
+                                    'text-slate-400 bg-slate-50 border border-slate-100'
+                                }`}>
                                 {move.status}
                               </span>
                               <span className="text-xs font-medium text-slate-500 truncate">
