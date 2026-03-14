@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { Loader2, ArrowLeft, Triangle } from 'lucide-react';
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [view, setView] = useState<'sign_in' | 'sign_up' | 'forgot_password'>('sign_in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,26 +16,32 @@ export default function Auth() {
     setError(null);
     setMessage(null);
 
-    if (!email || !password) {
-      setError('Please enter both email and password.');
+    if (!email || (view !== 'forgot_password' && !password)) {
+      setError('Please fill in all required fields.');
       setLoading(false);
       return;
     }
 
     try {
-      if (isLogin) {
+      if (view === 'sign_in') {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (signInError) throw signInError;
-      } else {
+      } else if (view === 'sign_up') {
         const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
         });
         if (signUpError) throw signUpError;
         setMessage('Registration successful! Please check your email to verify.');
+      } else if (view === 'forgot_password') {
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin,
+        });
+        if (resetError) throw resetError;
+        setMessage('OTP / Password reset link sent! Please check your email.');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during authentication.');
@@ -65,10 +71,13 @@ export default function Auth() {
             </div>
 
             <h1 className="text-[32px] font-bold text-slate-900 tracking-tight leading-tight mb-2">
-              {isLogin ? 'Sign in to your account' : 'Create an account'}
+              {view === 'sign_in' ? 'Sign in to your account' : 
+               view === 'sign_up' ? 'Create an account' : 'Reset password'}
             </h1>
             <p className="text-sm font-medium text-slate-500 mb-8">
-              {isLogin ? 'Please continue to sign in to your business account' : 'Enter your details to register a new account'}
+              {view === 'sign_in' ? 'Please continue to sign in to your business account' : 
+               view === 'sign_up' ? 'Enter your details to register a new account' :
+               'Enter your email to receive a password reset OTP/link'}
             </p>
 
             <form onSubmit={handleAuth} className="space-y-4">
@@ -86,16 +95,30 @@ export default function Auth() {
                 />
               </div>
 
-              <div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
-                  required
-                />
-              </div>
+              {view !== 'forgot_password' && (
+                <div>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                    required
+                  />
+                </div>
+              )}
+
+              {view === 'sign_in' && (
+                <div className="flex justify-end">
+                  <button 
+                    type="button" 
+                    onClick={() => setView('forgot_password')}
+                    className="text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -103,7 +126,7 @@ export default function Auth() {
                 className="w-full py-3.5 bg-[#18181b] hover:bg-black text-white rounded-xl text-sm font-bold transition-all flex justify-center items-center gap-2 disabled:opacity-70 mt-4"
               >
                 {loading && <Loader2 size={16} className="animate-spin" />}
-                Continue
+                {view === 'forgot_password' ? 'Send Reset Instructions' : 'Continue'}
               </button>
             </form>
 
@@ -140,14 +163,25 @@ export default function Auth() {
               </button>
             </div>
             
-            <div className="mt-8 text-center">
-               <button 
-                  type="button"
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
-                >
-                  {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-                </button>
+            <div className="mt-8 text-center space-x-4">
+               {view !== 'sign_in' && (
+                 <button 
+                    type="button"
+                    onClick={() => setView('sign_in')}
+                    className="text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
+                  >
+                    Back to Sign in
+                  </button>
+               )}
+               {view !== 'sign_up' && (
+                 <button 
+                    type="button"
+                    onClick={() => setView('sign_up')}
+                    className="text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
+                  >
+                    Create an account
+                  </button>
+               )}
             </div>
           </div>
           

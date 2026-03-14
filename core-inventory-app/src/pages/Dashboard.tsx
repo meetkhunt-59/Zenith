@@ -31,7 +31,9 @@ export default function Dashboard() {
     totalItems: 0,
     lowStock: 0,
     totalValue: 0,
-    activeShipments: 0
+    pendingReceipts: 0,
+    pendingDeliveries: 0,
+    pendingTransfers: 0
   });
 
   useEffect(() => {
@@ -39,8 +41,7 @@ export default function Dashboard() {
       // 1. Total unique products
       const { count: prodCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
       
-      // 2. Low stock items (items below reorder point)
-      // This requires a join or complex query, for now we query products and then check levels
+      // 2. Low stock items
       const { data: prods } = await supabase.from('products').select('id, reorder_point');
       const { data: levels } = await supabase.from('stock_levels').select('*');
       
@@ -50,14 +51,20 @@ export default function Dashboard() {
         if (qty < p.reorder_point) lowCount++;
       });
 
-      // 3. Active Shipments (Pending receipts/deliveries)
-      const { count: shipCount } = await supabase.from('stock_moves').select('*', { count: 'exact', head: true }).eq('status', 'draft');
+      // 3. Pending Operations Split
+      const { data: pendingMoves } = await supabase.from('stock_moves').select('type').eq('status', 'draft');
+      
+      const pReceipts = pendingMoves?.filter(m => m.type === 'receipt').length || 0;
+      const pDeliveries = pendingMoves?.filter(m => m.type === 'delivery').length || 0;
+      const pTransfers = pendingMoves?.filter(m => m.type === 'transfer').length || 0;
 
       setStats({
         totalItems: prodCount || 0,
         lowStock: lowCount,
         totalValue: (prodCount || 0) * 1250, // Mock value per item
-        activeShipments: shipCount || 0
+        pendingReceipts: pReceipts,
+        pendingDeliveries: pDeliveries,
+        pendingTransfers: pTransfers
       });
     }
     fetchStats();
@@ -67,11 +74,13 @@ export default function Dashboard() {
     <div className="space-y-10 pb-16">
       
       {/* 1st ROW: KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-6">
         <KPICard title="Total SKU's" value={stats.totalItems.toString()} change="+12.5%" icon={<Box className="text-emerald-500" />} />
         <KPICard title="Low Stock Alerts" value={stats.lowStock.toString()} change="Needs Attention" icon={<AlertTriangle className="text-orange-500" />} />
         <KPICard title="Inventory Value" value={`$${(stats.totalValue/1000).toFixed(1)}k`} change="+3.2%" icon={<DollarSign className="text-blue-500" />} />
-        <KPICard title="Pending Ops" value={stats.activeShipments.toString()} change="In Draft" icon={<Clock className="text-purple-500" />} />
+        <KPICard title="Pending Receipts" value={stats.pendingReceipts.toString()} change="To Receive" icon={<Clock className="text-indigo-500" />} />
+        <KPICard title="Pending Delivery" value={stats.pendingDeliveries.toString()} change="To Pack" icon={<Clock className="text-purple-500" />} />
+        <KPICard title="Pending Transfer" value={stats.pendingTransfers.toString()} change="Internal" icon={<Clock className="text-slate-500" />} />
       </div>
 
       {/* 2nd ROW: Real-time tracking (Now horizontal and full width) */}

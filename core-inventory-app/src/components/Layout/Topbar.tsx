@@ -1,15 +1,10 @@
-import { LogOut } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { User } from 'lucide-react';
 
 interface TopbarProps {
   userEmail: string;
 }
 
 export default function Topbar({ userEmail }: TopbarProps) {
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
-
   return (
     <header className="flex justify-between items-center premium-card !p-5 mb-6 text-left">
       <div className="flex items-center gap-3 lg:hidden">
@@ -23,17 +18,13 @@ export default function Topbar({ userEmail }: TopbarProps) {
       </div>
 
       <div className="flex items-center gap-4">
+        <div className="flex items-center justify-center w-10 h-10 bg-slate-100 text-slate-500 rounded-full sm:hidden">
+          <User size={18} />
+        </div>
         <div className="text-right mr-2 hidden sm:block">
           <div className="text-sm font-bold text-slate-900">{userEmail}</div>
-          <div className="text-[11px] font-semibold text-emerald-600 uppercase tracking-widest">Admin</div>
+          <div className="text-[11px] font-semibold text-emerald-600 uppercase tracking-widest">Manager</div>
         </div>
-        <button 
-          onClick={handleLogout}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors group"
-        >
-          <LogOut size={16} className="text-slate-400 group-hover:text-red-500 transition-colors" />
-          <span>Sign Out</span>
-        </button>
       </div>
     </header>
   );

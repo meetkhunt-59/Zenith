@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import { 
-  Home, Package, Settings, Share2, ArrowRightLeft, 
-  RotateCcw, History, ChevronRight, Sliders, MapPin
+  Home, Package, Share2, ArrowRightLeft, 
+  RotateCcw, History, ChevronRight, Sliders, MapPin,
+  User, LogOut
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -81,16 +82,24 @@ export default function Sidebar() {
       </nav>
 
       <div className="px-4 mt-auto">
-        <NavLink 
-          to="/settings" 
-          className={({ isActive }) => 
-            `flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-all ${
-              isActive ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-            }`
-          }
+        <div className="pt-6 pb-2 px-3 text-xs font-bold text-slate-400 uppercase tracking-widest border-t border-slate-100">
+          Profile Menu
+        </div>
+        <button 
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-all text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+          onClick={() => alert('Profile management coming soon.')}
         >
-          <Settings size={20} /> Settings
-        </NavLink>
+          <User size={20} /> My Profile
+        </button>
+        <button 
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-all text-slate-500 hover:bg-red-50 hover:text-red-600"
+          onClick={async () => {
+             const { supabase } = await import('../../lib/supabase');
+             await supabase.auth.signOut();
+          }}
+        >
+          <LogOut size={20} /> Logout
+        </button>
       </div>
     </aside>
   );
