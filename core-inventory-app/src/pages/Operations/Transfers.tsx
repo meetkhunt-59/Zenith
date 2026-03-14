@@ -93,14 +93,17 @@ export default function Transfers() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Internal Transfers</h2>
-          <p className="text-sm font-medium text-slate-500 mt-1">Move stock between warehouses or racks</p>
+          <h1 className="text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+            <ArrowRightLeft size={20} className="text-slate-400" />
+            Internal Transfers
+          </h1>
+          <p className="text-[13px] font-medium text-slate-500 mt-0.5">Move stock between warehouses or racks</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2"
+          className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm transition-all flex items-center gap-2 w-fit"
         >
           <Plus size={18} /> New Transfer
         </button>

@@ -37,8 +37,6 @@ export default function Products() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [filterCategoryId, setFilterCategoryId] = useState('all');
-  const [filterLocationId, setFilterLocationId] = useState('all');
-  const [filterStockState, setFilterStockState] = useState<'all' | 'in_stock' | 'out_of_stock' | 'low_stock'>('all');
   const [saving, setSaving] = useState(false);
 
   // Form State
@@ -183,89 +181,56 @@ export default function Products() {
 
       return { product, prodStocks, totalStock, isLow, isOut };
     })
-    .filter(({ product, prodStocks, isLow, isOut }) => {
+    .filter(({ product }) => {
       const matchesCategory = filterCategoryId === 'all' || product.category_id === filterCategoryId;
-      const matchesLocation =
-        filterLocationId === 'all' || prodStocks.some(s => s.location_id === filterLocationId && s.quantity > 0);
-      const matchesStockState =
-        filterStockState === 'all' ||
-        (filterStockState === 'in_stock' && !isOut) ||
-        (filterStockState === 'out_of_stock' && isOut) ||
-        (filterStockState === 'low_stock' && isLow);
-      return matchesCategory && matchesLocation && matchesStockState;
+      return matchesCategory;
     });
 
   return (
     <div className="space-y-6">
       
-      {/* Header Actions */}
-      <div className="flex flex-col xl:flex-row xl:justify-between xl:items-end gap-4 max-w-full overflow-hidden">
-        <div className="flex-shrink-0">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Products Engine</h2>
-          <p className="text-sm font-medium text-slate-500 mt-1">Manage your catalog, SKUs, and reorder points</p>
+      {/* Refined Compact Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+        <div>
+          <h1 className="text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+            <Package size={20} className="text-slate-400" />
+            Products Engine
+          </h1>
+          <p className="text-[13px] font-medium text-slate-500 mt-0.5">Manage catalog, SKUs, and reorder points</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto min-w-0">
-          <div className="relative flex-1 sm:w-64 min-w-[160px]">
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          {/* Compact Search */}
+          <div className="relative w-full sm:w-64">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={16} className="text-slate-400" />
+              <Search size={14} className="text-slate-400" />
             </div>
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Quick search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400 shadow-sm"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-slate-200 outline-none transition-all"
             />
           </div>
-          
-          <div className="flex flex-wrap items-center gap-2">
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <select
               value={filterCategoryId}
               onChange={(e) => setFilterCategoryId(e.target.value)}
-              className="flex-1 sm:flex-none px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-sm min-w-[120px]"
-              title="Category"
+              className="flex-1 sm:flex-none px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-sm outline-none cursor-pointer"
             >
-              <option value="all">All Categories</option>
+              <option value="all">Categories</option>
               {categories.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
-            <select
-               value={filterLocationId}
-               onChange={(e) => setFilterLocationId(e.target.value)}
-               className="flex-1 sm:flex-none px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-sm min-w-[120px]"
-               title="Location"
-            >
-              <option value="all">All Locations</option>
-              {locations
-                .filter(l => l.type === 'warehouse' || l.type === 'rack')
-                .map(l => (
-                  <option key={l.id} value={l.id}>{l.name}</option>
-                ))}
-            </select>
-            <select
-              value={filterStockState}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v === 'all' || v === 'in_stock' || v === 'low_stock' || v === 'out_of_stock') {
-                  setFilterStockState(v);
-                }
-              }}
-              className="flex-1 sm:flex-none px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-sm min-w-[120px]"
-              title="Stock"
-            >
-              <option value="all">All Stock</option>
-              <option value="in_stock">In Stock</option>
-              <option value="low_stock">Low Stock</option>
-              <option value="out_of_stock">Out of Stock</option>
-            </select>
             
             <button 
               onClick={openAddModal}
-              className="flex-1 sm:flex-none bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+              className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm transition-all flex items-center gap-2 whitespace-nowrap"
             >
-              <Plus size={16} /> <span>Add Product</span>
+              <Plus size={16} /> <span>Add</span>
             </button>
           </div>
         </div>

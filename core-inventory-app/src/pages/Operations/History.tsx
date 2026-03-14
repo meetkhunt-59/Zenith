@@ -35,14 +35,10 @@ interface StockMove {
 
 export default function MoveHistory() {
   const [moves, setMoves] = useState<StockMove[]>([]);
-  const [locations, setLocations] = useState<LocationMini[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [filterLocation, setFilterLocation] = useState('all');
-  const [filterCategory, setFilterCategory] = useState('all');
 
   useEffect(() => {
     const loadData = async () => {
@@ -75,67 +71,49 @@ export default function MoveHistory() {
       (filterStatus === 'ready' && m.status === 'pending') ||
       (filterStatus === 'done' && m.status === 'done') ||
       (filterStatus === 'canceled' && m.status === 'cancelled');
-    const matchesLoc = filterLocation === 'all' || m.from_location_id === filterLocation || m.to_location_id === filterLocation;
-    const matchesCat = filterCategory === 'all' || m.product?.category_id === filterCategory;
     
-    return matchesSearch && matchesType && matchesStatus && matchesLoc && matchesCat;
+    return matchesSearch && matchesType && matchesStatus;
   });
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Stock Ledger</h2>
-          <p className="text-sm font-medium text-slate-500 mt-1">Audit log of all inventory movements and adjustments</p>
+          <h1 className="text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+            <Search size={20} className="text-slate-400" />
+            Stock Ledger
+          </h1>
+          <p className="text-[13px] font-medium text-slate-500 mt-0.5">Audit log of all movements and adjustments</p>
         </div>
-        <div className="flex gap-4 items-center">
-          <div className="relative w-48">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+        
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full sm:w-48">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
             <input 
               type="text" 
               placeholder="Search..." 
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-slate-100"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
           <select 
-            className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700"
-            value={filterLocation}
-            onChange={e => setFilterLocation(e.target.value)}
-          >
-            <option value="all">All Locations</option>
-            {locations.map(loc => (
-              <option key={loc.id} value={loc.id}>{loc.name}</option>
-            ))}
-          </select>
-          <select 
-            className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700"
-            value={filterCategory}
-            onChange={e => setFilterCategory(e.target.value)}
-          >
-            <option value="all">All Categories</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
-          <select 
-            className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700"
+            className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
             value={filterType}
             onChange={e => setFilterType(e.target.value)}
           >
-            <option value="all">All Types</option>
+            <option value="all">Types</option>
             <option value="receipt">Receipts</option>
             <option value="delivery">Deliveries</option>
             <option value="transfer">Transfers</option>
             <option value="adjustment">Adjustments</option>
           </select>
           <select 
-            className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700"
+            className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value)}
           >
-            <option value="all">All Statuses</option>
+            <option value="all">Status</option>
             <option value="draft">Draft</option>
             <option value="waiting">Waiting</option>
             <option value="ready">Ready</option>

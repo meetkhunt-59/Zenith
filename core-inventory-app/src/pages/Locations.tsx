@@ -73,41 +73,78 @@ export default function Locations() {
   };
 
   return (
-    <div className="space-y-10">
-      <div className="flex justify-between items-center">
+    <div className="space-y-8">
+      {/* Compact Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Locations & Infrastructure</h2>
-          <p className="text-sm font-medium text-slate-500 mt-1">Manage your warehouses, aisles, and racks</p>
+          <h1 className="text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+            <Warehouse size={20} className="text-slate-400" />
+            Infrastructure
+          </h1>
+          <p className="text-[13px] font-medium text-slate-500 mt-0.5">Manage warehouses, aisles, and stock zones</p>
         </div>
-        <button onClick={openAddModal} className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-lg">
+        <button 
+          onClick={openAddModal} 
+          className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm transition-all flex items-center gap-2 w-fit"
+        >
           <Plus size={18} /> Add Location
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
           <div className="col-span-full py-20 text-center text-slate-400">Loading infrastructure...</div>
         ) : locations.length === 0 ? (
           <div className="col-span-full py-20 text-center text-slate-400">No locations defined. Create your first warehouse!</div>
         ) : (
           locations.map(loc => (
-            <div key={loc.id} className="premium-card group hover:border-emerald-200 transition-all flex items-start justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-500 transition-all border border-slate-100">
+            <div key={loc.id} className="group relative bg-white border border-slate-200 rounded-2xl p-5 hover:border-slate-300 hover:shadow-lg transition-all duration-300 overflow-hidden">
+              <div className="absolute top-0 right-0 p-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => openEditModal(loc)} className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors">
+                  <Edit2 size={14} />
+                </button>
+                <button onClick={() => handleDelete(loc.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-colors ${
+                  loc.type === 'warehouse' 
+                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                    : 'bg-indigo-50 text-indigo-600 border-indigo-100'
+                }`}>
                   {loc.type === 'warehouse' ? <Warehouse size={24} /> : <MapPin size={24} />}
                 </div>
+
                 <div>
-                  <div className="font-bold text-slate-900 text-lg">{loc.name}</div>
-                  <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{loc.type}</div>
+                  <h3 className="font-bold text-slate-900 text-lg leading-tight group-hover:text-emerald-700 transition-colors">{loc.name}</h3>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className={`text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-md border ${
+                      loc.type === 'warehouse' 
+                        ? 'bg-emerald-50/50 text-emerald-700 border-emerald-100' 
+                        : 'bg-slate-50 text-slate-500 border-slate-100'
+                    }`}>
+                      {loc.type.replace('_', ' ')}
+                    </span>
+                    {loc.parent_id && (
+                      <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                        <MapPin size={10} />
+                        Sub-zone
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => openEditModal(loc)} className="p-2 text-slate-300 hover:text-emerald-500 hover:bg-emerald-50 rounded-xl transition-all">
-                  <Edit2 size={16} />
-                </button>
-                <button onClick={() => handleDelete(loc.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
-                  <Trash2 size={16} />
-                </button>
+
+                <div className="pt-4 border-t border-slate-50 mt-1">
+                   <div className="text-[11px] font-bold text-slate-400 flex justify-between items-center">
+                      <span>OPERATIONAL STATE</span>
+                      <span className="text-emerald-500 flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        ACTIVE
+                      </span>
+                   </div>
+                </div>
               </div>
             </div>
           ))

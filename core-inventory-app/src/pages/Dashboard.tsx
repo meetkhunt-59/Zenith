@@ -265,19 +265,22 @@ export default function Dashboard() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out space-y-8 pb-12 w-full max-w-[1500px] mx-auto">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h1>
-          <p className="mt-1.5 text-slate-500 text-sm font-medium">
-            Real-time warehouse operations and inventory pulse.
+          <h1 className="text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+            <RefreshCw size={20} className="text-slate-400" />
+            Control Center
+          </h1>
+          <p className="text-[13px] font-medium text-slate-500 mt-0.5">
+            Real-time operations and inventory pulse.
           </p>
         </div>
         <button
           onClick={reload}
           disabled={anyLoading}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm disabled:opacity-50"
         >
-          <RefreshCw size={16} className={anyLoading ? "animate-spin text-slate-400" : ""} />
+          <RefreshCw size={14} className={anyLoading ? "animate-spin" : ""} />
           Sync Data
         </button>
       </div>
@@ -573,18 +576,21 @@ export default function Dashboard() {
       </div>
 
       {/* New Dynamic Filters Section */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 border-b border-slate-50 pb-6">
           <div>
-            <h2 className="text-xl font-extrabold text-slate-950">Operations Explorer</h2>
-            <p className="text-sm font-medium text-slate-500 mt-1">Drill down into stock movements with advanced filters.</p>
+            <h2 className="text-lg font-extrabold text-slate-950 flex items-center gap-2">
+              <Boxes size={20} className="text-slate-400" />
+              Operations Explorer
+            </h2>
+            <p className="text-[13px] font-medium text-slate-500 mt-0.5">Drill down into stock movements with advanced filters.</p>
           </div>
           
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <select 
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-200 transition-all"
+              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-100"
             >
               <option value="all">Document Type</option>
               <option value="receipt">Receipts</option>
@@ -596,9 +602,9 @@ export default function Dashboard() {
             <select 
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-200 transition-all"
+              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-100"
             >
-              <option value="all">All Statuses</option>
+              <option value="all">Status</option>
               <option value="draft">Draft</option>
               <option value="pending">Waiting</option>
               <option value="ready">Ready</option>
@@ -609,9 +615,9 @@ export default function Dashboard() {
             <select 
               value={filterLocId}
               onChange={(e) => setFilterLocId(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-200 transition-all"
+              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-100"
             >
-              <option value="all">All Locations</option>
+              <option value="all">Location</option>
               {locations.data.filter(l => l.type !== 'virtual').map(loc => (
                 <option key={loc.id} value={loc.id}>{loc.name}</option>
               ))}
@@ -620,9 +626,9 @@ export default function Dashboard() {
             <select 
               value={filterCatId}
               onChange={(e) => setFilterCatId(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-200 transition-all"
+              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-100"
             >
-              <option value="all">All Categories</option>
+              <option value="all">Category</option>
               {categories.data.map(cat => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
