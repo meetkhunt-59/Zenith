@@ -30,9 +30,9 @@ const AppLayout = () => {
 
   return (
     <div className="min-h-screen p-3 sm:p-5 lg:p-6">
-      <div className="app-panel flex min-h-[calc(100vh-24px)] overflow-hidden sm:min-h-[calc(100vh-40px)] lg:min-h-[calc(100vh-48px)]">
+      <div className="app-panel flex min-h-[calc(100vh-24px)] h-[calc(100vh-24px)] overflow-hidden sm:min-h-[calc(100vh-40px)] sm:h-[calc(100vh-40px)] lg:min-h-[calc(100vh-48px)] lg:h-[calc(100vh-48px)]">
         {/* Desktop sidebar */}
-        <Sidebar className="hidden shrink-0 lg:flex" />
+        <Sidebar className="hidden shrink-0 lg:flex h-full sticky top-0" />
 
         {/* Mobile sidebar overlay */}
         <div
@@ -56,8 +56,8 @@ const AppLayout = () => {
           />
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-          <div className="px-3 pb-6 pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-6 lg:pb-10 lg:pt-6">
+        <div className="flex min-w-0 flex-1 flex-col h-full overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-3 pb-6 pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-6 lg:pb-10 lg:pt-6">
             <div className="mx-auto flex max-w-[1600px] flex-col gap-6">
               <Topbar onMenuClick={() => setMobileNavOpen(true)} />
               <Outlet />
@@ -95,7 +95,7 @@ export default function App() {
         <div className="surface-card flex items-center gap-4 !px-6 !py-5">
           <div className="h-8 w-8 rounded-full border-4 border-[var(--color-brand-green)] border-t-transparent animate-spin"></div>
           <div>
-            <div className="section-label">CoreInventory</div>
+            <div className="section-label">Zenith</div>
             <div className="text-sm font-bold text-slate-900">Loading your workspace</div>
           </div>
         </div>

@@ -199,71 +199,75 @@ export default function Products() {
     <div className="space-y-6">
       
       {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
+      <div className="flex flex-col xl:flex-row xl:justify-between xl:items-end gap-4 max-w-full overflow-hidden">
+        <div className="flex-shrink-0">
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">Products Engine</h2>
           <p className="text-sm font-medium text-slate-500 mt-1">Manage your catalog, SKUs, and reorder points</p>
         </div>
         
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-64">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto min-w-0">
+          <div className="relative flex-1 sm:w-64 min-w-[160px]">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search size={16} className="text-slate-400" />
             </div>
             <input
               type="text"
-              placeholder="Search SKU or Name..."
+              placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400 shadow-sm"
+              className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400 shadow-sm"
             />
           </div>
-          <select
-            value={filterCategoryId}
-            onChange={(e) => setFilterCategoryId(e.target.value)}
-            className="px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 shadow-sm"
-            title="Filter by category"
-          >
-            <option value="all">All Categories</option>
-            {categories.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          <select
-            value={filterLocationId}
-            onChange={(e) => setFilterLocationId(e.target.value)}
-            className="px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 shadow-sm"
-            title="Filter by location"
-          >
-            <option value="all">All Locations</option>
-            {locations
-              .filter(l => l.type === 'warehouse' || l.type === 'rack')
-              .map(l => (
-                <option key={l.id} value={l.id}>{l.name}</option>
+          
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={filterCategoryId}
+              onChange={(e) => setFilterCategoryId(e.target.value)}
+              className="flex-1 sm:flex-none px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-sm min-w-[120px]"
+              title="Category"
+            >
+              <option value="all">All Categories</option>
+              {categories.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
-          </select>
-          <select
-            value={filterStockState}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v === 'all' || v === 'in_stock' || v === 'low_stock' || v === 'out_of_stock') {
-                setFilterStockState(v);
-              }
-            }}
-            className="px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 shadow-sm"
-            title="Smart stock filter"
-          >
-            <option value="all">All Stock</option>
-            <option value="in_stock">In Stock</option>
-            <option value="low_stock">Low Stock</option>
-            <option value="out_of_stock">Out of Stock</option>
-          </select>
-          <button 
-            onClick={openAddModal}
-            className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 whitespace-nowrap"
-          >
-            <Plus size={16} /> <span className="hidden sm:inline">Add Product</span>
-          </button>
+            </select>
+            <select
+               value={filterLocationId}
+               onChange={(e) => setFilterLocationId(e.target.value)}
+               className="flex-1 sm:flex-none px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-sm min-w-[120px]"
+               title="Location"
+            >
+              <option value="all">All Locations</option>
+              {locations
+                .filter(l => l.type === 'warehouse' || l.type === 'rack')
+                .map(l => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+            </select>
+            <select
+              value={filterStockState}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === 'all' || v === 'in_stock' || v === 'low_stock' || v === 'out_of_stock') {
+                  setFilterStockState(v);
+                }
+              }}
+              className="flex-1 sm:flex-none px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-sm min-w-[120px]"
+              title="Stock"
+            >
+              <option value="all">All Stock</option>
+              <option value="in_stock">In Stock</option>
+              <option value="low_stock">Low Stock</option>
+              <option value="out_of_stock">Out of Stock</option>
+            </select>
+            
+            <button 
+              onClick={openAddModal}
+              className="flex-1 sm:flex-none bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+            >
+              <Plus size={16} /> <span>Add Product</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -403,7 +407,7 @@ export default function Products() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">SKU Code</label>
                     <input
@@ -431,7 +435,7 @@ export default function Products() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {categories.length > 0 && (
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Category</label>
@@ -463,7 +467,7 @@ export default function Products() {
                 </div>
 
                 {!editingId && (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Initial Stock (Optional)</label>
                       <input

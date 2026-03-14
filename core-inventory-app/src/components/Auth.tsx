@@ -6,13 +6,13 @@ type AuthView = 'sign_in' | 'sign_up' | 'forgot_password' | 'reset_password';
 
 const viewCopy: Record<AuthView, { title: string; copy: string; action: string }> = {
   sign_in: {
-    title: 'Sign in to CoreInventory',
+    title: 'Sign in to Zenith',
     copy: 'Access your real-time inventory dashboard, stock operations, and warehouse controls.',
     action: 'Continue to dashboard',
   },
   sign_up: {
     title: 'Create your workspace',
-    copy: 'Start a fresh CoreInventory account for product setup, warehouse flows, and stock visibility.',
+    copy: 'Start a fresh Zenith account for product setup, warehouse flows, and stock visibility.',
     action: 'Create account',
   },
   forgot_password: {
@@ -124,9 +124,9 @@ export default function Auth() {
         <div className="hidden min-h-[840px] flex-col justify-between bg-[linear-gradient(160deg,#112027_0%,#153742_54%,#1b5866_100%)] px-10 py-10 text-white lg:flex">
           <div>
             <div className="flex items-center gap-3">
-              <img src="/icon.svg" alt="CoreInventory" className="h-11 w-11 rounded-2xl border border-white/10 bg-white/95 p-2" />
+              <img src="/icon.svg" alt="Zenith" className="h-11 w-11 rounded-2xl border border-white/10 bg-white/95 p-2" />
               <div>
-                <div className="text-lg font-extrabold tracking-tight">CoreInventory</div>
+                <div className="text-lg font-extrabold tracking-tight">Zenith</div>
                 <div className="text-sm font-medium text-white/65">Modern inventory management system</div>
               </div>
             </div>
@@ -139,7 +139,7 @@ export default function Auth() {
                 Calm, premium control for every warehouse movement.
               </h1>
               <p className="mt-6 text-base font-medium leading-7 text-white/72">
-                CoreInventory replaces scattered sheets and manual registers with one polished operational hub for receipts, delivery orders, transfers, and stock adjustments.
+                Zenith replaces scattered sheets and manual registers with one polished operational hub for receipts, delivery orders, transfers, and stock adjustments.
               </p>
             </div>
           </div>
@@ -212,7 +212,7 @@ export default function Auth() {
             </div>
 
             <div className="surface-card">
-              <div className="section-label">CoreInventory access</div>
+              <div className="section-label">Zenith access</div>
               <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-950">
                 {copy.title}
               </h2>

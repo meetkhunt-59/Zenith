@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   ArrowRightLeft,
@@ -16,7 +17,7 @@ import { supabase } from '../../lib/supabase';
 type NavItem = {
   name: string;
   to: string;
-  icon: JSX.Element;
+  icon: ReactNode;
   hint?: string;
 };
 
@@ -40,15 +41,19 @@ function NavSection({
           to={item.to}
           onClick={onNavigate}
           className={({ isActive }) =>
-            `group flex items-center justify-between gap-3 rounded-[22px] px-3 py-3 transition-all ${
+            `group flex items-center justify-between gap-3 rounded-[16px] px-3 py-3 transition-all ${
               isActive
-                ? 'bg-slate-950 text-white shadow-[0_18px_35px_rgba(17,32,39,0.16)]'
-                : 'text-slate-600 hover:bg-white hover:text-slate-950'
+                ? 'bg-slate-100 text-slate-900 font-bold'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
             }`
           }
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/60 bg-white/75 text-slate-500 transition-colors group-hover:text-[var(--color-brand-green)] group-[.active]:bg-white/10 group-[.active]:text-white">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
+              isActiveText(item.to) !== 'text-slate-400' 
+                ? 'bg-white border-slate-200 text-slate-900 shadow-sm' 
+                : 'border-transparent bg-transparent text-slate-500 group-hover:bg-white group-hover:border-slate-200 group-hover:shadow-sm group-hover:text-slate-700'
+            }`}>
               {item.icon}
             </div>
             <div>
@@ -68,8 +73,8 @@ function NavSection({
   );
 }
 
-function isActiveText(_: string) {
-  return 'text-slate-400';
+function isActiveText(path: string) {
+  return window.location.pathname.startsWith(path) ? 'text-slate-500' : 'text-slate-400';
 }
 
 export default function Sidebar({
@@ -105,9 +110,9 @@ export default function Sidebar({
       <div className="sidebar-shell flex h-full flex-col">
         <div className="mb-4 flex items-start justify-between gap-3 rounded-[26px] border border-slate-200 bg-white px-4 py-4 shadow-sm">
           <div className="flex items-start gap-3">
-            <img src="/icon.svg" alt="CoreInventory" className="mt-0.5 h-11 w-11 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm" />
+            <img src="/icon.svg" alt="Zenith" className="mt-0.5 h-11 w-11 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm" />
             <div>
-              <div className="text-base font-extrabold tracking-tight text-slate-950">CoreInventory</div>
+              <div className="text-base font-extrabold tracking-tight text-slate-950">Zenith</div>
               <div className="mt-1 text-xs font-semibold text-slate-500">
                 Operations dashboard
               </div>
