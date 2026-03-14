@@ -14,10 +14,7 @@ interface LocationMini {
   name: string;
 }
 
-interface Category {
-  id: string;
-  name: string;
-}
+
 
 interface StockMove {
   id: string;
@@ -44,14 +41,7 @@ export default function MoveHistory() {
     const loadData = async () => {
       setLoading(true);
       try {
-        const [movesData, locData, catData] = await Promise.all([
-          api.get<StockMove[]>('/operations/moves'),
-          api.get<LocationMini[]>('/locations'),
-          api.get<Category[]>('/products/categories').catch(() => []),
-        ]);
-
-        setLocations(locData || []);
-        setCategories(catData || []);
+        const movesData = await api.get<StockMove[]>('/operations/moves');
         setMoves(movesData || []);
       } finally {
         setLoading(false);

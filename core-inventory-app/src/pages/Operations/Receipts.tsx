@@ -94,7 +94,7 @@ export default function Receipts() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-8 mt-2">
         <div>
           <h1 className="text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
             <CheckCircle2 size={20} className="text-slate-400" />

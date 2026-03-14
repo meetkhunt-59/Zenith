@@ -262,10 +262,10 @@ export default function Dashboard() {
   const anyLoading = kpis.loading || products.loading || locations.loading || stockLevels.loading || moves.loading;
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out space-y-8 pb-12 w-full max-w-[1500px] mx-auto">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out space-y-10 pb-12 w-full max-w-[1500px] mx-auto">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-8 mt-4">
         <div>
           <h1 className="text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
             <RefreshCw size={20} className="text-slate-400" />
@@ -501,6 +501,102 @@ export default function Dashboard() {
               </div>
             )}
             
+            
+          </div>
+ 
+          {/* Operations Explorer */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 border-b border-slate-50 pb-6">
+              <div>
+                <h2 className="text-lg font-extrabold text-slate-950 flex items-center gap-2">
+                  <Boxes size={20} className="text-slate-400" />
+                  Operations Explorer
+                </h2>
+                <p className="text-[13px] font-medium text-slate-500 mt-0.5">Advanced drill-down.</p>
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-2">
+                <select 
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
+                >
+                  <option value="all">Types</option>
+                  <option value="receipt">Receipts</option>
+                  <option value="delivery">Deliveries</option>
+                  <option value="transfer">Transfers</option>
+                  <option value="adjustment">Adjustments</option>
+                </select>
+ 
+                <select 
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
+                >
+                  <option value="all">Status</option>
+                  <option value="draft">Draft</option>
+                  <option value="pending">Waiting</option>
+                  <option value="ready">Ready</option>
+                  <option value="done">Done</option>
+                </select>
+ 
+                <select 
+                  value={filterLocId}
+                  onChange={(e) => setFilterLocId(e.target.value)}
+                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
+                >
+                  <option value="all">Location</option>
+                  {locations.data.filter(l => l.type !== 'virtual').map(loc => (
+                    <option key={loc.id} value={loc.id}>{loc.name}</option>
+                  ))}
+                </select>
+ 
+                <select 
+                  value={filterCatId}
+                  onChange={(e) => setFilterCatId(e.target.value)}
+                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
+                >
+                  <option value="all">Category</option>
+                  {categories.data.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+ 
+            {filteredMoves.length === 0 ? (
+              <div className="py-12 flex flex-col items-center justify-center text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                <RefreshCw size={32} className="text-slate-300 mb-3" />
+                <p className="text-sm font-medium">No movements match.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredMoves.slice(0, 6).map((move) => {
+                  const product = productMap[move.product_id];
+                  const isReceipt = move.type === 'receipt';
+                  const isDelivery = move.type === 'delivery';
+                  const Icon = isReceipt ? ArrowDownLeft : isDelivery ? ArrowUpRight : MapPinned;
+                  const toneBg = isReceipt ? 'bg-emerald-50 text-emerald-600' : isDelivery ? 'bg-blue-50 text-blue-600' : 'bg-indigo-50 text-indigo-600';
+ 
+                  return (
+                    <div key={move.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/30 flex items-center gap-4">
+                      <div className={`flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl border ${toneBg}`}>
+                        <Icon size={18} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                           <p className="text-sm font-bold text-slate-900 truncate">{product?.name || 'Item'}</p>
+                           <span className="text-sm font-bold text-slate-700">x{move.quantity}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{move.status}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -575,116 +671,7 @@ export default function Dashboard() {
 
       </div>
 
-      {/* New Dynamic Filters Section */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 border-b border-slate-50 pb-6">
-          <div>
-            <h2 className="text-lg font-extrabold text-slate-950 flex items-center gap-2">
-              <Boxes size={20} className="text-slate-400" />
-              Operations Explorer
-            </h2>
-            <p className="text-[13px] font-medium text-slate-500 mt-0.5">Drill down into stock movements with advanced filters.</p>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-2">
-            <select 
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-100"
-            >
-              <option value="all">Document Type</option>
-              <option value="receipt">Receipts</option>
-              <option value="delivery">Deliveries</option>
-              <option value="transfer">Internal Transfers</option>
-              <option value="adjustment">Adjustments</option>
-            </select>
 
-            <select 
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-100"
-            >
-              <option value="all">Status</option>
-              <option value="draft">Draft</option>
-              <option value="pending">Waiting</option>
-              <option value="ready">Ready</option>
-              <option value="done">Done</option>
-              <option value="cancelled">Canceled</option>
-            </select>
-
-            <select 
-              value={filterLocId}
-              onChange={(e) => setFilterLocId(e.target.value)}
-              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-100"
-            >
-              <option value="all">Location</option>
-              {locations.data.filter(l => l.type !== 'virtual').map(loc => (
-                <option key={loc.id} value={loc.id}>{loc.name}</option>
-              ))}
-            </select>
-
-            <select 
-              value={filterCatId}
-              onChange={(e) => setFilterCatId(e.target.value)}
-              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-slate-100"
-            >
-              <option value="all">Category</option>
-              {categories.data.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {filteredMoves.length === 0 ? (
-          <div className="py-12 flex flex-col items-center justify-center text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-            <RefreshCw size={32} className="text-slate-300 mb-3" />
-            <p className="text-sm font-medium">No movements match your current filters.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredMoves.slice(0, 9).map((move) => {
-              const product = productMap[move.product_id];
-              const isReceipt = move.type === 'receipt';
-              const isDelivery = move.type === 'delivery';
-              const Icon = isReceipt ? ArrowDownLeft : isDelivery ? ArrowUpRight : MapPinned;
-              const toneBg = isReceipt ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                             isDelivery ? 'bg-blue-50 text-blue-600 border-blue-100' : 
-                             'bg-indigo-50 text-indigo-600 border-indigo-100';
-
-              return (
-                <div key={move.id} className="surface-card !p-4 group hover:border-slate-300 transition-all border-slate-200 border bg-white flex items-center gap-4">
-                  <div className={`flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-2xl border ${toneBg}`}>
-                    <Icon size={20} strokeWidth={2.5} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                       <p className="text-sm font-bold text-slate-900 truncate">
-                        {product?.name || 'Unknown Item'}
-                      </p>
-                      <span className="text-xs font-bold text-slate-700 whitespace-nowrap bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md">
-                        {isReceipt ? '+' : isDelivery ? '-' : ''}{move.quantity}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1.5">
-                       <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                        move.status === 'done' ? 'text-emerald-700 bg-emerald-50 border border-emerald-100' : 
-                        move.status === 'pending' ? 'text-amber-700 bg-amber-50 border border-amber-100' : 
-                        'text-slate-500 bg-slate-50 border border-slate-100'
-                      }`}>
-                        {move.status}
-                      </span>
-                      <span className="text-[11px] font-medium text-slate-400">
-                        {new Date(move.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
